@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.DS_Store
+local.settings.json
+.env
+.env.*
+!.env.example
+coverage/
+.azure/
