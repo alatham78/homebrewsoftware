@@ -14,11 +14,12 @@ to run.
 - **Style guidance** — every stat is shown on a range meter against BJCP 2021
   guidelines for 25 styles, with clear in-style / low / high flags.
 - **Ingredient catalog** — 110+ fermentables organized by group and maltster
-  (Briess, Weyermann, Simpsons, Crisp, Dingemans…), 22 hop varieties, and 16
-  yeast strains, searchable and used directly by the designer. Users can add
-  their own custom fermentables from the UI; custom entries persist on-device
-  and recipes keep a full copy of every ingredient's data, so deleting a
-  custom entry never breaks a saved recipe.
+  (Briess, Weyermann, Simpsons, Crisp, Dingemans…), 70+ hop varieties grouped
+  by origin, and 65+ yeast strains from six labs (Fermentis, Lallemand,
+  White Labs, Wyeast, Omega, Imperial), searchable and used directly by the
+  designer. Users can add custom fermentables, hops, and yeasts from the UI;
+  custom entries persist on-device and recipes keep a full copy of every
+  ingredient's data, so deleting a custom entry never breaks a saved recipe.
 - **Brewing tools** — ABV, strike water, priming sugar, hydrometer temperature
   correction, and dilution/boil-off calculators.
 - **BeerXML export** — recipes export to BeerXML 1.0 (imports into BeerSmith,

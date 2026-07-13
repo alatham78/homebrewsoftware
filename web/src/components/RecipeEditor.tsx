@@ -3,9 +3,10 @@ import {
   BEER_STYLES,
   FERMENTABLE_GROUPS,
   FERMENTABLES,
+  HOP_ORIGINS,
   HOPS,
+  YEAST_LABS,
   YEASTS,
-  hopById,
   ibuForAddition,
   mashWaterQt,
   pointsToSg,
@@ -13,13 +14,14 @@ import {
   sgToPoints,
   strikeWaterTempF,
   toBeerXml,
-  yeastById,
   type Fermentable,
+  type Hop,
   type HopForm,
   type HopUse,
   type Recipe,
+  type Yeast,
 } from '@brewhaus/core';
-import { useCustomFermentables } from '../lib/customFermentables';
+import { useCustomFermentables, useCustomHops, useCustomYeasts } from '../lib/customIngredients';
 import { StatsPanel } from './StatsPanel';
 
 function FermentableOptions({ all }: { all: Fermentable[] }) {
@@ -34,6 +36,68 @@ function FermentableOptions({ all }: { all: Fermentable[] }) {
               <option key={f.id} value={f.id}>
                 {f.name}
                 {f.origin ? ` · ${f.origin}` : ''}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </>
+  );
+}
+
+function HopOptions({ builtIn, custom }: { builtIn: Hop[]; custom: Hop[] }) {
+  return (
+    <>
+      {custom.length > 0 && (
+        <optgroup label="Custom">
+          {custom.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {HOP_ORIGINS.map((origin) => {
+        const members = builtIn.filter((h) => h.origin === origin);
+        if (members.length === 0) return null;
+        return (
+          <optgroup key={origin} label={origin}>
+            {members.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.name}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </>
+  );
+}
+
+function YeastOptions({ builtIn, custom }: { builtIn: Yeast[]; custom: Yeast[] }) {
+  const otherLabs = [...new Set(builtIn.map((y) => y.lab))].filter(
+    (lab) => !(YEAST_LABS as readonly string[]).includes(lab),
+  );
+  return (
+    <>
+      {custom.length > 0 && (
+        <optgroup label="Custom">
+          {custom.map((y) => (
+            <option key={y.id} value={y.id}>
+              {y.name}
+              {y.productId ? ` (${y.productId})` : ''}
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {[...YEAST_LABS, ...otherLabs].map((lab) => {
+        const members = builtIn.filter((y) => y.lab === lab);
+        if (members.length === 0) return null;
+        return (
+          <optgroup key={lab} label={lab}>
+            {members.map((y) => (
+              <option key={y.id} value={y.id}>
+                {y.productId} · {y.name}
               </option>
             ))}
           </optgroup>
@@ -66,11 +130,16 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
   const [recipe, setRecipe] = useState<Recipe>(initial);
   const [dirty, setDirty] = useState(false);
   const customFermentables = useCustomFermentables();
+  const customHops = useCustomHops();
+  const customYeasts = useCustomYeasts();
   const allFermentables = useMemo(
     () => [...FERMENTABLES, ...customFermentables],
     [customFermentables],
   );
   const findFermentable = (id: string) => allFermentables.find((f) => f.id === id);
+  const findHop = (id: string) => HOPS.find((h) => h.id === id) ?? customHops.find((h) => h.id === id);
+  const findYeast = (id: string) =>
+    YEASTS.find((y) => y.id === id) ?? customYeasts.find((y) => y.id === id);
 
   const stats = useMemo(() => recipeStats(recipe), [recipe]);
   const boilGravity =
@@ -117,7 +186,7 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
 
   // --- hops ---
   const addHop = () => {
-    const h = hopById('cascade')!;
+    const h = findHop('cascade')!;
     patch({
       hops: [
         ...recipe.hops,
@@ -130,7 +199,7 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
     patch({ hops: recipe.hops.map((row, j) => (j === i ? { ...row, ...p } : row)) });
 
   const setHop = (i: number, id: string) => {
-    const h = hopById(id);
+    const h = findHop(id);
     if (h) patchHop(i, { hopId: h.id, name: h.name, alpha: h.alpha });
   };
 
@@ -139,7 +208,7 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
   // --- yeast ---
   const setYeast = (id: string) => {
     if (id === '') return patch({ yeast: null });
-    const y = yeastById(id);
+    const y = findYeast(id);
     if (y) {
       patch({
         yeast: { yeastId: y.id, name: y.name, lab: y.lab, productId: y.productId, form: y.form, attenuation: y.attenuation },
@@ -308,11 +377,8 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
                     <tr key={i}>
                       <td>
                         <select value={h.hopId} onChange={(e) => setHop(i, e.target.value)}>
-                          {HOPS.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.name}
-                            </option>
-                          ))}
+                          {!findHop(h.hopId) && <option value={h.hopId}>{h.name} (saved copy)</option>}
+                          <HopOptions builtIn={HOPS} custom={customHops} />
                         </select>
                       </td>
                       <td className="num">
@@ -374,11 +440,10 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
                 Yeast
                 <select value={recipe.yeast?.yeastId ?? ''} onChange={(e) => setYeast(e.target.value)}>
                   <option value="">— none selected —</option>
-                  {YEASTS.map((y) => (
-                    <option key={y.id} value={y.id}>
-                      {y.lab} {y.productId} · {y.name}
-                    </option>
-                  ))}
+                  {recipe.yeast && !findYeast(recipe.yeast.yeastId) && (
+                    <option value={recipe.yeast.yeastId}>{recipe.yeast.name} (saved copy)</option>
+                  )}
+                  <YeastOptions builtIn={YEASTS} custom={customYeasts} />
                 </select>
               </label>
               <label className="field">

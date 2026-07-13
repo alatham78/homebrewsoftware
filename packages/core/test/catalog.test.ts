@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { FERMENTABLE_GROUPS, FERMENTABLES, HOPS, YEASTS } from '../src/index.js';
 
 describe('ingredient catalog', () => {
-  it('has a comprehensive fermentable list', () => {
+  it('has comprehensive ingredient lists', () => {
     expect(FERMENTABLES.length).toBeGreaterThanOrEqual(100);
+    expect(HOPS.length).toBeGreaterThanOrEqual(60);
+    expect(YEASTS.length).toBeGreaterThanOrEqual(60);
   });
 
   it('has unique ids across all catalogs', () => {
@@ -25,6 +27,28 @@ describe('ingredient catalog', () => {
       'lme-light', 'dme-light', 'dme-wheat',
     ]) {
       expect(ids.has(legacy), `missing legacy id ${legacy}`).toBe(true);
+    }
+
+    const hopIds = new Set(HOPS.map((h) => h.id));
+    for (const legacy of ['cascade', 'citra', 'galaxy', 'magnum', 'ekg', 'saaz', 'mosaic', 'simcoe']) {
+      expect(hopIds.has(legacy), `missing legacy hop id ${legacy}`).toBe(true);
+    }
+
+    const yeastIds = new Set(YEASTS.map((y) => y.id));
+    for (const legacy of ['us-05', 's-04', 'w-34-70', 'wy1318', 'wlp001', 'verdant', 'voss-kveik']) {
+      expect(yeastIds.has(legacy), `missing legacy yeast id ${legacy}`).toBe(true);
+    }
+  });
+
+  it('has plausible values on every hop and yeast', () => {
+    for (const h of HOPS) {
+      expect(h.alpha, h.id).toBeGreaterThan(0);
+      expect(h.alpha, h.id).toBeLessThanOrEqual(25);
+    }
+    for (const y of YEASTS) {
+      expect(y.attenuation, y.id).toBeGreaterThanOrEqual(60);
+      expect(y.attenuation, y.id).toBeLessThanOrEqual(95);
+      expect(y.tempLowF, y.id).toBeLessThan(y.tempHighF);
     }
   });
 

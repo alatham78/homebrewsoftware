@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
-import { FERMENTABLES, HOPS, YEASTS, type FermentableType } from '@brewhaus/core';
+import { FERMENTABLES, HOPS, YEASTS, type FermentableType, type YeastForm } from '@brewhaus/core';
 import {
-  addCustomFermentable,
-  removeCustomFermentable,
+  customFermentables,
+  customHops,
+  customYeasts,
   useCustomFermentables,
-} from '../lib/customFermentables';
+  useCustomHops,
+  useCustomYeasts,
+} from '../lib/customIngredients';
 
 type Tab = 'fermentables' | 'hops' | 'yeasts';
 
@@ -22,7 +25,7 @@ function CustomFermentableForm({ onDone }: { onDone: (name: string) => void }) {
 
   const submit = () => {
     if (!valid) return;
-    addCustomFermentable({ name: name.trim(), type, potential, lovibond, mustMash, origin: origin.trim() || undefined });
+    customFermentables.add({ name: name.trim(), type, potential, lovibond, mustMash, origin: origin.trim() || undefined });
     onDone(name.trim());
     setName('');
     setOrigin('');
@@ -86,8 +89,139 @@ function CustomFermentableForm({ onDone }: { onDone: (name: string) => void }) {
         </button>
       </div>
       <p className="empty-hint" style={{ paddingBottom: 0 }}>
-        Custom entries are saved on this device and appear in the recipe designer under “Custom”.
         Typical base malts are ~1.036–1.038 potential; check your maltster’s spec sheet.
+      </p>
+    </div>
+  );
+}
+
+function CustomHopForm({ onDone }: { onDone: (name: string) => void }) {
+  const [name, setName] = useState('');
+  const [alpha, setAlpha] = useState(10);
+  const [origin, setOrigin] = useState('');
+  const [profile, setProfile] = useState('');
+
+  const valid = name.trim().length > 0 && alpha > 0 && alpha <= 30;
+
+  const submit = () => {
+    if (!valid) return;
+    customHops.add({ name: name.trim(), alpha, origin: origin.trim(), profile: profile.trim() });
+    onDone(name.trim());
+    setName('');
+    setProfile('');
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <h2 className="section-title">New custom hop</h2>
+      <div className="field-row" style={{ gridTemplateColumns: '2fr 1fr 1fr', alignItems: 'end' }}>
+        <label className="field">
+          Variety name
+          <input value={name} placeholder="e.g. Experimental HBC 586" onChange={(e) => setName(e.target.value)} autoFocus />
+        </label>
+        <label className="field">
+          Alpha acid (%)
+          <input type="number" step={0.1} min={0.1} max={30} value={alpha} onChange={(e) => setAlpha(Number(e.target.value))} />
+        </label>
+        <label className="field">
+          Origin (optional)
+          <input value={origin} placeholder="e.g. US" onChange={(e) => setOrigin(e.target.value)} />
+        </label>
+      </div>
+      <div className="field-row" style={{ gridTemplateColumns: '3fr 1fr', marginTop: 14, alignItems: 'end' }}>
+        <label className="field">
+          Flavor profile (optional)
+          <input value={profile} placeholder="e.g. Guava, mango, sticky pine" onChange={(e) => setProfile(e.target.value)} />
+        </label>
+        <button className="btn primary" disabled={!valid} onClick={submit} style={{ justifySelf: 'end' }}>
+          Add to catalog
+        </button>
+      </div>
+      <p className="empty-hint" style={{ paddingBottom: 0 }}>
+        Alpha acid is the default for new additions; you can still override it per-recipe for each lot.
+      </p>
+    </div>
+  );
+}
+
+function CustomYeastForm({ onDone }: { onDone: (name: string) => void }) {
+  const [name, setName] = useState('');
+  const [lab, setLab] = useState('');
+  const [productId, setProductId] = useState('');
+  const [form, setForm] = useState<YeastForm>('dry');
+  const [attenuation, setAttenuation] = useState(75);
+  const [tempLowF, setTempLowF] = useState(62);
+  const [tempHighF, setTempHighF] = useState(72);
+  const [description, setDescription] = useState('');
+
+  const valid =
+    name.trim().length > 0 && attenuation >= 50 && attenuation <= 100 && tempLowF <= tempHighF;
+
+  const submit = () => {
+    if (!valid) return;
+    customYeasts.add({
+      name: name.trim(),
+      lab: lab.trim() || 'Custom',
+      productId: productId.trim(),
+      form,
+      attenuation,
+      tempLowF,
+      tempHighF,
+      description: description.trim(),
+    });
+    onDone(name.trim());
+    setName('');
+    setProductId('');
+    setDescription('');
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <h2 className="section-title">New custom yeast</h2>
+      <div className="field-row" style={{ gridTemplateColumns: '2fr 1fr 1fr 1fr' }}>
+        <label className="field">
+          Strain name
+          <input value={name} placeholder="e.g. Farmhouse Blend" onChange={(e) => setName(e.target.value)} autoFocus />
+        </label>
+        <label className="field">
+          Lab (optional)
+          <input value={lab} placeholder="e.g. Bootleg Biology" onChange={(e) => setLab(e.target.value)} />
+        </label>
+        <label className="field">
+          Product ID (optional)
+          <input value={productId} placeholder="e.g. OSLO" onChange={(e) => setProductId(e.target.value)} />
+        </label>
+        <label className="field">
+          Form
+          <select value={form} onChange={(e) => setForm(e.target.value as YeastForm)}>
+            <option value="dry">dry</option>
+            <option value="liquid">liquid</option>
+          </select>
+        </label>
+      </div>
+      <div className="field-row" style={{ gridTemplateColumns: '1fr 1fr 1fr 2fr 1fr', marginTop: 14, alignItems: 'end' }}>
+        <label className="field">
+          Attenuation (%)
+          <input type="number" min={50} max={100} value={attenuation} onChange={(e) => setAttenuation(Number(e.target.value))} />
+        </label>
+        <label className="field">
+          Temp low (°F)
+          <input type="number" min={40} max={100} value={tempLowF} onChange={(e) => setTempLowF(Number(e.target.value))} />
+        </label>
+        <label className="field">
+          Temp high (°F)
+          <input type="number" min={40} max={110} value={tempHighF} onChange={(e) => setTempHighF(Number(e.target.value))} />
+        </label>
+        <label className="field">
+          Character (optional)
+          <input value={description} placeholder="e.g. Clean, subtle citrus" onChange={(e) => setDescription(e.target.value)} />
+        </label>
+        <button className="btn primary" disabled={!valid} onClick={submit} style={{ justifySelf: 'end' }}>
+          Add to catalog
+        </button>
+      </div>
+      <p className="empty-hint" style={{ paddingBottom: 0 }}>
+        Attenuation drives the FG and ABV estimates whenever this yeast is picked in the designer.
       </p>
     </div>
   );
@@ -98,24 +232,37 @@ export function Ingredients() {
   const [query, setQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const customFermentables = useCustomFermentables();
+  const myFermentables = useCustomFermentables();
+  const myHops = useCustomHops();
+  const myYeasts = useCustomYeasts();
   const q = query.trim().toLowerCase();
 
   const fermentables = useMemo(
     () =>
-      [...customFermentables, ...FERMENTABLES].filter((f) =>
+      [...myFermentables, ...FERMENTABLES].filter((f) =>
         `${f.name} ${f.origin ?? ''} ${f.group ?? ''} ${f.type}`.toLowerCase().includes(q),
       ),
-    [q, customFermentables],
+    [q, myFermentables],
   );
   const hops = useMemo(
-    () => HOPS.filter((h) => (h.name + h.profile + h.origin).toLowerCase().includes(q)),
-    [q],
+    () =>
+      [...myHops, ...HOPS].filter((h) => (h.name + h.profile + h.origin).toLowerCase().includes(q)),
+    [q, myHops],
   );
   const yeasts = useMemo(
-    () => YEASTS.filter((y) => (y.name + y.lab + y.productId + y.description).toLowerCase().includes(q)),
-    [q],
+    () =>
+      [...myYeasts, ...YEASTS].filter((y) =>
+        (y.name + y.lab + y.productId + y.description).toLowerCase().includes(q),
+      ),
+    [q, myYeasts],
   );
+
+  const isCustom = (id: string) => id.startsWith('custom-');
+
+  const announce = (name: string) => {
+    setNotice(`Added “${name}” — it's now available in the recipe designer`);
+    window.setTimeout(() => setNotice(null), 3200);
+  };
 
   return (
     <>
@@ -123,8 +270,9 @@ export function Ingredients() {
         <div>
           <h1 className="page-title">Ingredients</h1>
           <p className="page-sub">
-            {FERMENTABLES.length + customFermentables.length} fermentables ({customFermentables.length}{' '}
-            custom), {HOPS.length} hops, {YEASTS.length} yeasts
+            {FERMENTABLES.length + myFermentables.length} fermentables ({myFermentables.length} custom),{' '}
+            {HOPS.length + myHops.length} hops ({myHops.length} custom), {YEASTS.length + myYeasts.length}{' '}
+            yeasts ({myYeasts.length} custom)
           </p>
         </div>
         <div className="row-actions">
@@ -141,22 +289,15 @@ export function Ingredients() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {tab === 'fermentables' && (
-            <button className="btn primary" onClick={() => setShowForm((s) => !s)}>
-              {showForm ? 'Close' : '+ Custom entry'}
-            </button>
-          )}
+          <button className="btn primary" onClick={() => setShowForm((s) => !s)}>
+            {showForm ? 'Close' : '+ Custom entry'}
+          </button>
         </div>
       </div>
 
-      {tab === 'fermentables' && showForm && (
-        <CustomFermentableForm
-          onDone={(name) => {
-            setNotice(`Added “${name}” — it's now available in the recipe designer`);
-            window.setTimeout(() => setNotice(null), 3200);
-          }}
-        />
-      )}
+      {showForm && tab === 'fermentables' && <CustomFermentableForm onDone={announce} />}
+      {showForm && tab === 'hops' && <CustomHopForm onDone={announce} />}
+      {showForm && tab === 'yeasts' && <CustomYeastForm onDone={announce} />}
 
       <div className="card">
         {tab === 'fermentables' && (
@@ -173,33 +314,30 @@ export function Ingredients() {
               </tr>
             </thead>
             <tbody>
-              {fermentables.map((f) => {
-                const isCustom = f.group === 'Custom';
-                return (
-                  <tr key={f.id}>
-                    <td>
-                      {f.name} {isCustom && <span className="badge">custom</span>}
-                    </td>
-                    <td>{f.group ?? '—'}</td>
-                    <td>{f.origin || '—'}</td>
-                    <td className="num">{f.potential.toFixed(3)}</td>
-                    <td className="num">{f.lovibond}</td>
-                    <td>{f.mustMash ? 'yes' : 'no'}</td>
-                    <td className="num">
-                      {isCustom && (
-                        <button
-                          className="btn subtle sm danger"
-                          aria-label={`Delete ${f.name}`}
-                          title="Delete custom entry (saved recipes keep their copy)"
-                          onClick={() => removeCustomFermentable(f.id)}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+              {fermentables.map((f) => (
+                <tr key={f.id}>
+                  <td>
+                    {f.name} {isCustom(f.id) && <span className="badge">custom</span>}
+                  </td>
+                  <td>{f.group ?? '—'}</td>
+                  <td>{f.origin || '—'}</td>
+                  <td className="num">{f.potential.toFixed(3)}</td>
+                  <td className="num">{f.lovibond}</td>
+                  <td>{f.mustMash ? 'yes' : 'no'}</td>
+                  <td className="num">
+                    {isCustom(f.id) && (
+                      <button
+                        className="btn subtle sm danger"
+                        aria-label={`Delete ${f.name}`}
+                        title="Delete custom entry (saved recipes keep their copy)"
+                        onClick={() => customFermentables.remove(f.id)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}
@@ -211,15 +349,30 @@ export function Ingredients() {
                 <th className="num">Alpha %</th>
                 <th>Origin</th>
                 <th>Profile</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {hops.map((h) => (
                 <tr key={h.id}>
-                  <td>{h.name}</td>
+                  <td>
+                    {h.name} {isCustom(h.id) && <span className="badge">custom</span>}
+                  </td>
                   <td className="num">{h.alpha.toFixed(1)}</td>
-                  <td>{h.origin}</td>
-                  <td>{h.profile}</td>
+                  <td>{h.origin || '—'}</td>
+                  <td>{h.profile || '—'}</td>
+                  <td className="num">
+                    {isCustom(h.id) && (
+                      <button
+                        className="btn subtle sm danger"
+                        aria-label={`Delete ${h.name}`}
+                        title="Delete custom entry (saved recipes keep their copy)"
+                        onClick={() => customHops.remove(h.id)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -235,13 +388,16 @@ export function Ingredients() {
                 <th className="num">Attenuation %</th>
                 <th className="num">Temp (°F)</th>
                 <th>Character</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {yeasts.map((y) => (
                 <tr key={y.id}>
                   <td>
-                    {y.name} <span style={{ color: 'var(--ink-muted)' }}>({y.productId})</span>
+                    {y.name}{' '}
+                    {y.productId && <span style={{ color: 'var(--ink-muted)' }}>({y.productId})</span>}{' '}
+                    {isCustom(y.id) && <span className="badge">custom</span>}
                   </td>
                   <td>{y.lab}</td>
                   <td>{y.form}</td>
@@ -249,7 +405,19 @@ export function Ingredients() {
                   <td className="num">
                     {y.tempLowF}–{y.tempHighF}
                   </td>
-                  <td>{y.description}</td>
+                  <td>{y.description || '—'}</td>
+                  <td className="num">
+                    {isCustom(y.id) && (
+                      <button
+                        className="btn subtle sm danger"
+                        aria-label={`Delete ${y.name}`}
+                        title="Delete custom entry (saved recipes keep their copy)"
+                        onClick={() => customYeasts.remove(y.id)}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
