@@ -22,6 +22,16 @@ to run.
   ingredient's data, so deleting a custom entry never breaks a saved recipe.
 - **Brewing tools** — ABV, strike water, priming sugar, hydrometer temperature
   correction, and dilution/boil-off calculators.
+- **Water chemistry** — every recipe has a Water section: pick a source
+  (8 classic city presets or your own saved water), pick a style target
+  (hoppy pale, juicy IPA, balanced, malty, stout, crisp lager), and either
+  dose the six common brewing salts by hand or let the built-in solver
+  suggest additions that approach the target. Live readouts show the treated
+  ion profile, sulfate:chloride balance, residual alkalinity, an estimated
+  mash pH, and a lactic acid suggestion. The Water page imports **Ward Labs
+  reports** — paste the report text and the parser extracts the six brewing
+  ions (converting Ward's sulfur-basis SO₄-S to SO₄ automatically) and saves
+  it as a reusable source profile.
 - **BeerXML export** — recipes export to BeerXML 1.0 (imports into BeerSmith,
   Brewfather, etc.) and plain JSON.
 - **Works offline** — the app runs fully from localStorage when the API isn't
@@ -135,3 +145,8 @@ npm run build && func start     # http://localhost:7071/api/health
 - ABV: `(OG − FG) × 131.25`; calories from real extract via Plato conversions.
 - Strike water: `(0.2 / ratio) × (T_mash − T_grain) + T_mash`.
 - Priming: residual CO₂ by temperature, corn sugar at 15.195 g per volume-gallon.
+- Water: standard salt ion contributions (ppm per g/gal); salt suggestions via
+  non-negative least squares; residual alkalinity per Kolbach/Palmer
+  (`alkalinity − Ca/1.4 − Mg/1.7`); mash pH is a simplified estimate from
+  grist distilled-water pH, RA scaled by mash thickness, and 88% lactic at
+  ~11.8 mEq/mL against ~40 mEq/kg·pH grist buffering — guidance, not a meter.

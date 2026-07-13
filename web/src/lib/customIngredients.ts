@@ -7,14 +7,14 @@ import type { Fermentable, Hop, Yeast } from '@brewhaus/core';
  * each addition, so deleting a custom entry never breaks a saved recipe.
  */
 
-interface CustomStore<T extends { id: string }> {
+export interface CustomStore<T extends { id: string }> {
   getSnapshot: () => T[];
   subscribe: (fn: () => void) => () => void;
   add: (entry: Omit<T, 'id'>) => T;
   remove: (id: string) => void;
 }
 
-function createStore<T extends { id: string }>(
+export function createStore<T extends { id: string }>(
   key: string,
   decorate: (entry: Omit<T, 'id'> & { id: string }) => T,
 ): CustomStore<T> {

@@ -23,6 +23,7 @@ import {
 } from '@brewhaus/core';
 import { useCustomFermentables, useCustomHops, useCustomYeasts } from '../lib/customIngredients';
 import { StatsPanel } from './StatsPanel';
+import { WaterPanel } from './WaterPanel';
 
 function FermentableOptions({ all }: { all: Fermentable[] }) {
   return (
@@ -498,6 +499,8 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
               {recipe.mash.mashTempF} °F.
             </p>
           </section>
+
+          <WaterPanel recipe={recipe} onChange={(water) => patch({ water })} />
 
           <section className="card">
             <h2 className="section-title">Notes</h2>

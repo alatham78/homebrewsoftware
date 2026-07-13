@@ -22,6 +22,13 @@ export function newRecipe(partial: Partial<Recipe> = {}): Recipe {
     yeast: null,
     mash: { mashTempF: 152, mashTimeMin: 60, ratioQtPerLb: 1.5 },
     carbonationVols: 2.4,
+    water: {
+      sourceName: 'Distilled / RO',
+      source: { ca: 0, mg: 0, na: 0, so4: 0, cl: 0, hco3: 0 },
+      targetId: 'balanced',
+      salts: { gypsum: 0, cacl2: 0, epsom: 0, nacl: 0, nahco3: 0, caco3: 0 },
+      lacticAcidMl: 0,
+    },
     notes: '',
     createdAt: now,
     updatedAt: now,

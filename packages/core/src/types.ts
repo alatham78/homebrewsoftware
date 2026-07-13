@@ -106,6 +106,45 @@ export interface MashProfile {
   ratioQtPerLb: number;
 }
 
+/** Brewing water ion concentrations, ppm (mg/L). */
+export interface WaterProfile {
+  ca: number;
+  mg: number;
+  na: number;
+  so4: number;
+  cl: number;
+  hco3: number;
+}
+
+/** Brewing salt additions in grams, dosed into the total brewing water. */
+export interface SaltAdditions {
+  /** Gypsum, CaSO4·2H2O */
+  gypsum: number;
+  /** Calcium chloride, CaCl2·2H2O */
+  cacl2: number;
+  /** Epsom salt, MgSO4·7H2O */
+  epsom: number;
+  /** Canning/table salt, NaCl */
+  nacl: number;
+  /** Baking soda, NaHCO3 */
+  nahco3: number;
+  /** Chalk, CaCO3 */
+  caco3: number;
+}
+
+/** Water treatment attached to a recipe. */
+export interface RecipeWater {
+  /** Display name of the source profile (preset, or a saved lab report) */
+  sourceName: string;
+  /** Ion profile of the untreated source water */
+  source: WaterProfile;
+  /** id of the target style profile preset */
+  targetId: string;
+  salts: SaltAdditions;
+  /** mL of 88% lactic acid added to the mash */
+  lacticAcidMl: number;
+}
+
 export interface StyleRange {
   min: number;
   max: number;
@@ -140,6 +179,8 @@ export interface Recipe {
   mash: MashProfile;
   /** Target CO2 volumes for packaging */
   carbonationVols: number;
+  /** Water chemistry (absent on recipes saved before the water feature) */
+  water?: RecipeWater;
   notes: string;
   createdAt: string;
   updatedAt: string;

@@ -4,14 +4,16 @@ import { Calculators } from './components/Calculators';
 import { Ingredients } from './components/Ingredients';
 import { RecipeEditor } from './components/RecipeEditor';
 import { RecipeList } from './components/RecipeList';
+import { WaterPage } from './components/WaterPage';
 import { deleteRecipe, listRecipes, saveRecipe } from './lib/store';
 
-type Page = 'recipes' | 'tools' | 'ingredients';
+type Page = 'recipes' | 'tools' | 'ingredients' | 'water';
 
 const NAV: Array<{ id: Page; label: string; icon: string }> = [
   { id: 'recipes', label: 'Recipes', icon: '🍺' },
   { id: 'tools', label: 'Brewing tools', icon: '🧮' },
   { id: 'ingredients', label: 'Ingredients', icon: '🌾' },
+  { id: 'water', label: 'Water', icon: '💧' },
 ];
 
 export default function App() {
@@ -93,6 +95,8 @@ export default function App() {
           <RecipeList recipes={recipes} source={source} onOpen={setEditing} onCreate={handleCreate} />
         ) : page === 'tools' ? (
           <Calculators />
+        ) : page === 'water' ? (
+          <WaterPage />
         ) : (
           <Ingredients />
         )}
