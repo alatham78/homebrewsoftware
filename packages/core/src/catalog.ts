@@ -1,40 +1,167 @@
-import type { Fermentable, Hop, Yeast } from './types.js';
+import type { Fermentable, FermentableGroup, Hop, Yeast } from './types.js';
 
-/** Built-in fermentable catalog (potential as SG per lb/gal, color in °L). */
+/** Display order for fermentable groups in pickers and the browser. */
+export const FERMENTABLE_GROUPS: FermentableGroup[] = [
+  'Base malt',
+  'Crystal & caramel',
+  'Roasted',
+  'Specialty',
+  'Adjunct',
+  'Sugar',
+  'Extract',
+  'Custom',
+];
+
+const base = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'grain', potential, lovibond, mustMash: true, group: 'Base malt', origin });
+const crystal = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'grain', potential, lovibond, mustMash: true, group: 'Crystal & caramel', origin });
+const roasted = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'grain', potential, lovibond, mustMash: true, group: 'Roasted', origin });
+const specialty = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'grain', potential, lovibond, mustMash: true, group: 'Specialty', origin });
+const adjunct = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'adjunct', potential, lovibond, mustMash: true, group: 'Adjunct', origin });
+const sugar = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'sugar', potential, lovibond, mustMash: false, group: 'Sugar', origin });
+const lme = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'extract', potential, lovibond, mustMash: false, group: 'Extract', origin });
+const dme = (id: string, name: string, potential: number, lovibond: number, origin: string): Fermentable =>
+  ({ id, name, type: 'dry extract', potential, lovibond, mustMash: false, group: 'Extract', origin });
+
+/**
+ * Built-in fermentable catalog (potential as SG per lb/gal, color in °L).
+ * Values are typical published numbers for each product; exact lots vary,
+ * and every value can be overridden per-recipe or via a custom ingredient.
+ */
 export const FERMENTABLES: Fermentable[] = [
-  { id: 'pale-2row', name: '2-Row Pale Malt (US)', type: 'grain', potential: 1.037, lovibond: 1.8, mustMash: true },
-  { id: 'pale-maris-otter', name: 'Maris Otter (UK)', type: 'grain', potential: 1.038, lovibond: 3.0, mustMash: true },
-  { id: 'pilsner-de', name: 'Pilsner Malt (German)', type: 'grain', potential: 1.037, lovibond: 1.6, mustMash: true },
-  { id: 'vienna', name: 'Vienna Malt', type: 'grain', potential: 1.036, lovibond: 3.5, mustMash: true },
-  { id: 'munich-10', name: 'Munich Malt (10L)', type: 'grain', potential: 1.035, lovibond: 10, mustMash: true },
-  { id: 'wheat-malt', name: 'Wheat Malt (German)', type: 'grain', potential: 1.039, lovibond: 2.0, mustMash: true },
-  { id: 'white-wheat', name: 'White Wheat Malt (US)', type: 'grain', potential: 1.040, lovibond: 2.4, mustMash: true },
-  { id: 'flaked-oats', name: 'Flaked Oats', type: 'adjunct', potential: 1.033, lovibond: 1.0, mustMash: true },
-  { id: 'flaked-wheat', name: 'Flaked Wheat', type: 'adjunct', potential: 1.034, lovibond: 1.6, mustMash: true },
-  { id: 'flaked-corn', name: 'Flaked Corn (Maize)', type: 'adjunct', potential: 1.037, lovibond: 0.5, mustMash: true },
-  { id: 'flaked-rice', name: 'Flaked Rice', type: 'adjunct', potential: 1.038, lovibond: 0.5, mustMash: true },
-  { id: 'crystal-20', name: 'Caramel/Crystal 20L', type: 'grain', potential: 1.035, lovibond: 20, mustMash: true },
-  { id: 'crystal-40', name: 'Caramel/Crystal 40L', type: 'grain', potential: 1.034, lovibond: 40, mustMash: true },
-  { id: 'crystal-60', name: 'Caramel/Crystal 60L', type: 'grain', potential: 1.034, lovibond: 60, mustMash: true },
-  { id: 'crystal-120', name: 'Caramel/Crystal 120L', type: 'grain', potential: 1.033, lovibond: 120, mustMash: true },
-  { id: 'caramunich', name: 'CaraMunich III', type: 'grain', potential: 1.034, lovibond: 57, mustMash: true },
-  { id: 'carapils', name: 'Carapils (Dextrine)', type: 'grain', potential: 1.033, lovibond: 1.5, mustMash: true },
-  { id: 'victory', name: 'Victory / Biscuit Malt', type: 'grain', potential: 1.034, lovibond: 25, mustMash: true },
-  { id: 'honey-malt', name: 'Honey Malt', type: 'grain', potential: 1.037, lovibond: 25, mustMash: true },
-  { id: 'chocolate', name: 'Chocolate Malt (UK)', type: 'grain', potential: 1.034, lovibond: 425, mustMash: true },
-  { id: 'pale-chocolate', name: 'Pale Chocolate Malt', type: 'grain', potential: 1.034, lovibond: 225, mustMash: true },
-  { id: 'roasted-barley', name: 'Roasted Barley', type: 'grain', potential: 1.025, lovibond: 300, mustMash: true },
-  { id: 'black-patent', name: 'Black Patent Malt', type: 'grain', potential: 1.025, lovibond: 500, mustMash: true },
-  { id: 'midnight-wheat', name: 'Midnight Wheat', type: 'grain', potential: 1.033, lovibond: 550, mustMash: true },
-  { id: 'acid-malt', name: 'Acidulated Malt', type: 'grain', potential: 1.027, lovibond: 3.0, mustMash: true },
-  { id: 'corn-sugar', name: 'Corn Sugar (Dextrose)', type: 'sugar', potential: 1.046, lovibond: 0, mustMash: false },
-  { id: 'table-sugar', name: 'Table Sugar (Sucrose)', type: 'sugar', potential: 1.046, lovibond: 0, mustMash: false },
-  { id: 'honey', name: 'Honey', type: 'sugar', potential: 1.035, lovibond: 1.0, mustMash: false },
-  { id: 'lactose', name: 'Lactose (Milk Sugar)', type: 'sugar', potential: 1.041, lovibond: 0, mustMash: false },
-  { id: 'candi-syrup-d90', name: 'Belgian Candi Syrup D-90', type: 'sugar', potential: 1.032, lovibond: 90, mustMash: false },
-  { id: 'lme-light', name: 'Light Liquid Malt Extract', type: 'extract', potential: 1.036, lovibond: 4, mustMash: false },
-  { id: 'dme-light', name: 'Light Dry Malt Extract', type: 'dry extract', potential: 1.044, lovibond: 4, mustMash: false },
-  { id: 'dme-wheat', name: 'Wheat Dry Malt Extract', type: 'dry extract', potential: 1.044, lovibond: 3, mustMash: false },
+  // ---- Base malts ----
+  base('pale-2row', '2-Row Pale Malt', 1.037, 1.8, 'US'),
+  base('pale-6row', '6-Row Pale Malt', 1.035, 1.8, 'US'),
+  base('pale-ale-malt', 'Pale Ale Malt', 1.036, 3.5, 'Briess (US)'),
+  base('pilsen-us', 'Pilsen Malt', 1.037, 1.2, 'Briess (US)'),
+  base('pale-maris-otter', 'Maris Otter', 1.038, 3.0, 'UK'),
+  base('golden-promise', 'Golden Promise', 1.038, 2.4, 'Simpsons (UK)'),
+  base('pearl-pale', 'Pearl / Optic Pale Malt', 1.038, 2.2, 'UK'),
+  base('mild-ale-malt', 'Mild Ale Malt', 1.037, 4.0, 'UK'),
+  base('pilsner-de', 'Pilsner Malt', 1.037, 1.6, 'Weyermann (DE)'),
+  base('pilsner-be', 'Pilsner Malt', 1.037, 1.6, 'Dingemans (BE)'),
+  base('belgian-pale-ale', 'Pale Ale Malt', 1.038, 3.2, 'Dingemans (BE)'),
+  base('vienna', 'Vienna Malt', 1.036, 3.5, 'Weyermann (DE)'),
+  base('munich-10', 'Munich Malt I (10L)', 1.035, 10, 'Weyermann (DE)'),
+  base('munich-20', 'Munich Malt II (Dark, 20L)', 1.035, 20, 'Weyermann (DE)'),
+  base('wheat-malt', 'Wheat Malt', 1.039, 2.0, 'Weyermann (DE)'),
+  base('white-wheat', 'White Wheat Malt', 1.040, 2.4, 'US'),
+  base('red-wheat', 'Red Wheat Malt', 1.038, 2.3, 'US'),
+  base('rye-malt', 'Rye Malt', 1.029, 3.7, 'US'),
+  base('spelt-malt', 'Spelt Malt', 1.036, 3.0, 'DE'),
+  base('oat-malt', 'Oat Malt', 1.033, 2.0, 'Simpsons (UK)'),
+
+  // ---- Crystal & caramel ----
+  crystal('crystal-10', 'Caramel/Crystal 10L', 1.035, 10, 'Briess (US)'),
+  crystal('crystal-20', 'Caramel/Crystal 20L', 1.035, 20, 'Briess (US)'),
+  crystal('crystal-30', 'Caramel/Crystal 30L', 1.035, 30, 'Briess (US)'),
+  crystal('crystal-40', 'Caramel/Crystal 40L', 1.034, 40, 'Briess (US)'),
+  crystal('crystal-60', 'Caramel/Crystal 60L', 1.034, 60, 'Briess (US)'),
+  crystal('crystal-80', 'Caramel/Crystal 80L', 1.034, 80, 'Briess (US)'),
+  crystal('crystal-120', 'Caramel/Crystal 120L', 1.033, 120, 'Briess (US)'),
+  crystal('crystal-150', 'Caramel/Crystal 150L', 1.033, 150, 'Briess (US)'),
+  crystal('carapils', 'Carapils (Dextrine)', 1.033, 1.5, 'Briess (US)'),
+  crystal('carafoam', 'CaraFoam', 1.033, 1.8, 'Weyermann (DE)'),
+  crystal('carahell', 'CaraHell', 1.034, 11, 'Weyermann (DE)'),
+  crystal('carared', 'CaraRed', 1.034, 20, 'Weyermann (DE)'),
+  crystal('caraamber', 'CaraAmber', 1.034, 27, 'Weyermann (DE)'),
+  crystal('caramunich-1', 'CaraMunich I', 1.034, 37, 'Weyermann (DE)'),
+  crystal('caramunich-2', 'CaraMunich II', 1.034, 46, 'Weyermann (DE)'),
+  crystal('caramunich', 'CaraMunich III', 1.034, 57, 'Weyermann (DE)'),
+  crystal('caraaroma', 'CaraAroma', 1.034, 130, 'Weyermann (DE)'),
+  crystal('carawheat', 'CaraWheat', 1.034, 45, 'Weyermann (DE)'),
+  crystal('carabohemian', 'CaraBohemian', 1.034, 75, 'Weyermann (DE)'),
+  crystal('crystal-light-uk', 'Crystal Light', 1.034, 45, 'Simpsons (UK)'),
+  crystal('crystal-medium-uk', 'Crystal Medium', 1.034, 65, 'Simpsons (UK)'),
+  crystal('crystal-dark-uk', 'Crystal Dark', 1.034, 80, 'Simpsons (UK)'),
+  crystal('crystal-extra-dark-uk', 'Extra Dark Crystal', 1.033, 120, 'Crisp (UK)'),
+  crystal('drc', 'Double Roasted Crystal (DRC)', 1.032, 130, 'Simpsons (UK)'),
+  crystal('golden-naked-oats', 'Golden Naked Oats', 1.033, 10, 'Simpsons (UK)'),
+  crystal('caravienne', 'CaraVienne (Cara 20)', 1.034, 21, 'Dingemans (BE)'),
+  crystal('special-b', 'Special B', 1.030, 115, 'Dingemans (BE)'),
+
+  // ---- Roasted ----
+  roasted('chocolate', 'Chocolate Malt', 1.034, 425, 'UK'),
+  roasted('chocolate-us', 'Chocolate Malt', 1.034, 350, 'US'),
+  roasted('pale-chocolate', 'Pale Chocolate Malt', 1.034, 225, 'UK'),
+  roasted('chocolate-wheat', 'Chocolate Wheat', 1.033, 400, 'Weyermann (DE)'),
+  roasted('chocolate-rye', 'Chocolate Rye', 1.032, 250, 'Weyermann (DE)'),
+  roasted('carafa-1', 'Carafa Special I (dehusked)', 1.032, 340, 'Weyermann (DE)'),
+  roasted('carafa-2', 'Carafa Special II (dehusked)', 1.032, 430, 'Weyermann (DE)'),
+  roasted('carafa-3', 'Carafa Special III (dehusked)', 1.031, 525, 'Weyermann (DE)'),
+  roasted('roasted-barley', 'Roasted Barley', 1.025, 300, 'UK'),
+  roasted('black-patent', 'Black Patent Malt', 1.025, 500, 'UK'),
+  roasted('midnight-wheat', 'Midnight Wheat', 1.033, 550, 'Briess (US)'),
+  roasted('blackprinz', 'Blackprinz (dehusked)', 1.033, 500, 'Briess (US)'),
+  roasted('coffee-malt', 'Coffee / Kiln Coffee Malt', 1.034, 150, 'UK'),
+
+  // ---- Specialty ----
+  specialty('victory', 'Victory / Biscuit Malt', 1.034, 25, 'Briess (US)'),
+  specialty('biscuit-be', 'Biscuit Malt', 1.035, 23, 'Dingemans (BE)'),
+  specialty('honey-malt', 'Honey Malt', 1.037, 25, 'Gambrinus (CA)'),
+  specialty('melanoidin', 'Melanoidin Malt', 1.037, 27, 'Weyermann (DE)'),
+  specialty('aromatic', 'Aromatic Malt', 1.036, 19, 'Dingemans (BE)'),
+  specialty('amber-malt', 'Amber Malt', 1.032, 27, 'Crisp (UK)'),
+  specialty('brown-malt', 'Brown Malt', 1.032, 65, 'Crisp (UK)'),
+  specialty('special-roast', 'Special Roast', 1.033, 50, 'Briess (US)'),
+  specialty('rauchmalz', 'Smoked Malt (Beechwood)', 1.037, 3.0, 'Weyermann (DE)'),
+  specialty('peated-malt', 'Peated Malt', 1.035, 2.0, 'UK'),
+  specialty('acid-malt', 'Acidulated Malt', 1.027, 3.0, 'Weyermann (DE)'),
+  specialty('chit-malt', 'Chit Malt', 1.033, 1.5, 'DE'),
+
+  // ---- Adjuncts ----
+  adjunct('flaked-oats', 'Flaked Oats', 1.033, 1.0, ''),
+  adjunct('flaked-barley', 'Flaked Barley', 1.032, 2.0, ''),
+  adjunct('flaked-wheat', 'Flaked Wheat', 1.034, 1.6, ''),
+  adjunct('flaked-corn', 'Flaked Corn (Maize)', 1.037, 0.5, ''),
+  adjunct('flaked-rice', 'Flaked Rice', 1.038, 0.5, ''),
+  adjunct('flaked-rye', 'Flaked Rye', 1.034, 3.0, ''),
+  adjunct('torrified-wheat', 'Torrified Wheat', 1.036, 2.0, 'UK'),
+  adjunct('raw-wheat', 'Raw (Unmalted) Wheat', 1.036, 2.0, ''),
+  adjunct('oat-hulls', 'Oat Hulls (lautering aid)', 1.0, 0, ''),
+
+  // ---- Sugars ----
+  sugar('corn-sugar', 'Corn Sugar (Dextrose)', 1.046, 0, ''),
+  sugar('table-sugar', 'Table Sugar (Sucrose)', 1.046, 0, ''),
+  sugar('brown-sugar-light', 'Brown Sugar (Light)', 1.046, 8, ''),
+  sugar('brown-sugar-dark', 'Brown Sugar (Dark)', 1.046, 40, ''),
+  sugar('demerara', 'Demerara / Turbinado Sugar', 1.046, 10, ''),
+  sugar('invert-2', 'Invert Sugar Syrup No. 2', 1.046, 17, 'UK'),
+  sugar('invert-3', 'Invert Sugar Syrup No. 3', 1.046, 65, 'UK'),
+  sugar('honey', 'Honey', 1.035, 1.0, ''),
+  sugar('maple-syrup', 'Maple Syrup', 1.030, 3.0, ''),
+  sugar('molasses', 'Molasses', 1.036, 80, ''),
+  sugar('treacle', 'Black Treacle', 1.036, 100, 'UK'),
+  sugar('candi-clear', 'Belgian Candi Sugar (Clear)', 1.036, 1, 'BE'),
+  sugar('candi-amber', 'Belgian Candi Sugar (Amber)', 1.036, 40, 'BE'),
+  sugar('candi-dark', 'Belgian Candi Sugar (Dark)', 1.036, 80, 'BE'),
+  sugar('candi-syrup-d45', 'Candi Syrup D-45', 1.032, 45, 'BE'),
+  sugar('candi-syrup-d90', 'Candi Syrup D-90', 1.032, 90, 'BE'),
+  sugar('candi-syrup-d180', 'Candi Syrup D-180', 1.032, 180, 'BE'),
+  sugar('lactose', 'Lactose (Milk Sugar)', 1.041, 0, ''),
+  sugar('rice-syrup-solids', 'Rice Syrup Solids', 1.040, 1, ''),
+  sugar('agave', 'Agave Nectar', 1.034, 1, ''),
+
+  // ---- Extracts ----
+  lme('lme-light', 'Liquid Malt Extract — Light', 1.036, 4, ''),
+  lme('lme-gold', 'Liquid Malt Extract — Gold', 1.036, 6, ''),
+  lme('lme-amber', 'Liquid Malt Extract — Amber', 1.036, 12, ''),
+  lme('lme-dark', 'Liquid Malt Extract — Dark', 1.036, 20, ''),
+  lme('lme-wheat', 'Liquid Malt Extract — Wheat', 1.036, 4, ''),
+  lme('lme-pilsen', 'Liquid Malt Extract — Pilsen', 1.036, 2, ''),
+  lme('lme-munich', 'Liquid Malt Extract — Munich', 1.036, 9, ''),
+  dme('dme-light', 'Dry Malt Extract — Light', 1.044, 4, ''),
+  dme('dme-gold', 'Dry Malt Extract — Gold', 1.044, 6, ''),
+  dme('dme-amber', 'Dry Malt Extract — Amber', 1.044, 12, ''),
+  dme('dme-dark', 'Dry Malt Extract — Dark', 1.044, 20, ''),
+  dme('dme-wheat', 'Dry Malt Extract — Wheat', 1.044, 3, ''),
+  dme('dme-pilsen', 'Dry Malt Extract — Pilsen', 1.044, 2, ''),
 ];
 
 /** Built-in hop catalog (typical alpha acid %). */

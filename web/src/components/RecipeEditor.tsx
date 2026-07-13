@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
   BEER_STYLES,
+  FERMENTABLE_GROUPS,
   FERMENTABLES,
   HOPS,
   YEASTS,
-  fermentableById,
   hopById,
   ibuForAddition,
   mashWaterQt,
@@ -14,11 +14,34 @@ import {
   strikeWaterTempF,
   toBeerXml,
   yeastById,
+  type Fermentable,
   type HopForm,
   type HopUse,
   type Recipe,
 } from '@brewhaus/core';
+import { useCustomFermentables } from '../lib/customFermentables';
 import { StatsPanel } from './StatsPanel';
+
+function FermentableOptions({ all }: { all: Fermentable[] }) {
+  return (
+    <>
+      {FERMENTABLE_GROUPS.map((group) => {
+        const members = all.filter((f) => (f.group ?? 'Specialty') === group);
+        if (members.length === 0) return null;
+        return (
+          <optgroup key={group} label={group}>
+            {members.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name}
+                {f.origin ? ` · ${f.origin}` : ''}
+              </option>
+            ))}
+          </optgroup>
+        );
+      })}
+    </>
+  );
+}
 
 const HOP_USES: HopUse[] = ['boil', 'whirlpool', 'dry hop', 'first wort', 'mash'];
 const HOP_FORMS: HopForm[] = ['pellet', 'leaf', 'plug'];
@@ -42,6 +65,12 @@ interface Props {
 export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Props) {
   const [recipe, setRecipe] = useState<Recipe>(initial);
   const [dirty, setDirty] = useState(false);
+  const customFermentables = useCustomFermentables();
+  const allFermentables = useMemo(
+    () => [...FERMENTABLES, ...customFermentables],
+    [customFermentables],
+  );
+  const findFermentable = (id: string) => allFermentables.find((f) => f.id === id);
 
   const stats = useMemo(() => recipeStats(recipe), [recipe]);
   const boilGravity =
@@ -59,7 +88,7 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
 
   // --- fermentables ---
   const addFermentable = () => {
-    const f = fermentableById('pale-2row')!;
+    const f = findFermentable('pale-2row')!;
     patch({
       fermentables: [
         ...recipe.fermentables,
@@ -69,7 +98,7 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
   };
 
   const setFermentable = (i: number, id: string) => {
-    const f = fermentableById(id);
+    const f = findFermentable(id);
     if (!f) return;
     patch({
       fermentables: recipe.fermentables.map((row, j) =>
@@ -219,11 +248,10 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
                     <tr key={i}>
                       <td>
                         <select value={f.fermentableId} onChange={(e) => setFermentable(i, e.target.value)}>
-                          {FERMENTABLES.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                              {opt.name}
-                            </option>
-                          ))}
+                          {!findFermentable(f.fermentableId) && (
+                            <option value={f.fermentableId}>{f.name} (saved copy)</option>
+                          )}
+                          <FermentableOptions all={allFermentables} />
                         </select>
                       </td>
                       <td className="num">

@@ -11,6 +11,16 @@
 
 export type FermentableType = 'grain' | 'sugar' | 'extract' | 'dry extract' | 'adjunct';
 
+export type FermentableGroup =
+  | 'Base malt'
+  | 'Crystal & caramel'
+  | 'Roasted'
+  | 'Specialty'
+  | 'Adjunct'
+  | 'Sugar'
+  | 'Extract'
+  | 'Custom';
+
 export interface Fermentable {
   id: string;
   name: string;
@@ -21,6 +31,10 @@ export interface Fermentable {
   lovibond: number;
   /** Whether the fermentable must be mashed (mash efficiency applies) */
   mustMash: boolean;
+  /** Catalog group used to organize pickers and the ingredient browser */
+  group?: FermentableGroup;
+  /** Maltster / brand / country of origin */
+  origin?: string;
 }
 
 export interface FermentableAddition {
