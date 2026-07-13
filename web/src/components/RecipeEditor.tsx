@@ -14,6 +14,7 @@ import {
   MISC_CATALOG,
   PRIMING_SUGARS,
   primingSugarGramsFor,
+  STYLE_CATEGORIES,
   volumeBreakdown,
   YEAST_LABS,
   YEASTS,
@@ -365,10 +366,14 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
               <label className="field">
                 Style
                 <select value={recipe.styleId} onChange={(e) => patch({ styleId: e.target.value })}>
-                  {BEER_STYLES.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
+                  {STYLE_CATEGORIES.map((category) => (
+                    <optgroup key={category} label={category}>
+                      {BEER_STYLES.filter((s) => s.category === category).map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </label>

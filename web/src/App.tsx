@@ -4,16 +4,18 @@ import { Calculators } from './components/Calculators';
 import { Ingredients } from './components/Ingredients';
 import { RecipeEditor } from './components/RecipeEditor';
 import { RecipeList } from './components/RecipeList';
+import { StylesPage } from './components/StylesPage';
 import { WaterPage } from './components/WaterPage';
 import { deleteRecipe, listRecipes, saveRecipe } from './lib/store';
 
-type Page = 'recipes' | 'tools' | 'ingredients' | 'water';
+type Page = 'recipes' | 'tools' | 'ingredients' | 'water' | 'styles';
 
 const NAV: Array<{ id: Page; label: string; icon: string }> = [
   { id: 'recipes', label: 'Recipes', icon: '🍺' },
   { id: 'tools', label: 'Brewing tools', icon: '🧮' },
   { id: 'ingredients', label: 'Ingredients', icon: '🌾' },
   { id: 'water', label: 'Water', icon: '💧' },
+  { id: 'styles', label: 'Style guide', icon: '📖' },
 ];
 
 export default function App() {
@@ -56,6 +58,20 @@ export default function App() {
     setEditing(newRecipe({ name: 'New Recipe' }));
   };
 
+  const handleImport = async (imported: Recipe[]) => {
+    if (imported.length === 0) {
+      showToast('Nothing imported — is that a BeerXML or BrewHaus JSON file?');
+      return;
+    }
+    for (const r of imported) await saveRecipe(r);
+    await refresh();
+    showToast(
+      imported.length === 1
+        ? `Imported “${imported[0]!.name}”`
+        : `Imported ${imported.length} recipes`,
+    );
+  };
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -92,11 +108,19 @@ export default function App() {
             }}
           />
         ) : page === 'recipes' ? (
-          <RecipeList recipes={recipes} source={source} onOpen={setEditing} onCreate={handleCreate} />
+          <RecipeList
+            recipes={recipes}
+            source={source}
+            onOpen={setEditing}
+            onCreate={handleCreate}
+            onImport={(r) => void handleImport(r)}
+          />
         ) : page === 'tools' ? (
           <Calculators />
         ) : page === 'water' ? (
           <WaterPage />
+        ) : page === 'styles' ? (
+          <StylesPage />
         ) : (
           <Ingredients />
         )}

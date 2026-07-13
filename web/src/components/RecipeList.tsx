@@ -1,13 +1,34 @@
-import { recipeStats, srmToHex, styleById, type Recipe } from '@brewhaus/core';
+import { useRef } from 'react';
+import { newRecipe, parseBeerXml, recipeStats, srmToHex, styleById, type Recipe } from '@brewhaus/core';
 
 interface Props {
   recipes: Recipe[];
   source: 'cloud' | 'local';
   onOpen: (recipe: Recipe) => void;
   onCreate: () => void;
+  onImport: (recipes: Recipe[]) => void;
 }
 
-export function RecipeList({ recipes, source, onOpen, onCreate }: Props) {
+/** Parse a BeerXML or BrewHaus-JSON file into recipes (fresh ids). */
+function parseImport(text: string): Recipe[] {
+  if (text.trimStart().startsWith('<')) return parseBeerXml(text);
+  const data = JSON.parse(text) as Recipe | Recipe[];
+  return (Array.isArray(data) ? data : [data]).map((r) => newRecipe({ ...r, id: undefined as unknown as string }));
+}
+
+export function RecipeList({ recipes, source, onOpen, onCreate, onImport }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const imported = parseImport(await file.text());
+      onImport(imported);
+    } catch {
+      onImport([]);
+    }
+    if (fileRef.current) fileRef.current.value = '';
+  };
   return (
     <>
       <div className="page-head">
@@ -18,9 +39,21 @@ export function RecipeList({ recipes, source, onOpen, onCreate }: Props) {
             {source === 'cloud' ? 'synced to Azure' : 'stored on this device'}
           </p>
         </div>
-        <button className="btn primary" onClick={onCreate}>
-          + New recipe
-        </button>
+        <div className="row-actions">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".xml,.json,text/xml,application/json"
+            style={{ display: 'none' }}
+            onChange={(e) => void handleFile(e.target.files?.[0])}
+          />
+          <button className="btn" title="BeerXML (.xml) from BeerSmith/Brewfather, or BrewHaus JSON" onClick={() => fileRef.current?.click()}>
+            ⬆ Import
+          </button>
+          <button className="btn primary" onClick={onCreate}>
+            + New recipe
+          </button>
+        </div>
       </div>
 
       <div className="recipe-grid">

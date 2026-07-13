@@ -204,6 +204,10 @@ export interface BeerStyle {
   ibu: StyleRange;
   srm: StyleRange;
   abv: StyleRange;
+  /** One-line character summary (BJCP 2021 flavor) */
+  description?: string;
+  /** A few commercial examples */
+  examples?: string;
 }
 
 export interface Recipe {
