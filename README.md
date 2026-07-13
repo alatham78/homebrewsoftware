@@ -34,6 +34,32 @@ to run.
   it as a reusable source profile.
 - **BeerXML export** — recipes export to BeerXML 1.0 (imports into BeerSmith,
   Brewfather, etc.) and plain JSON.
+- **Equipment profiles** — model your rig (boil-off, kettle/lauter deadspace,
+  grain absorption, fermenter loss) with presets for kettle+cooler, BIAB,
+  all-in-one electric, and three-vessel systems; volumes (pre-boil, strike,
+  sparge, packaged) derive from it automatically.
+- **Multi-step mash schedules** — infusion, temperature, and decoction steps
+  with per-step water guidance (strike temp, Palmer infusion volumes,
+  decoction pull estimates) and batch/fly/full-volume sparge handling.
+- **Misc additions** — spices, finings, water agents, fruit, and flavorings
+  as first-class recipe items with an 18-entry quick-add catalog.
+- **Yeast pitch & starters** — pitch-rate targets by beer type, pack
+  viability decay, and stir-plate starter sizing.
+- **Packaging depth** — priming sugar in four sugar types plus keg
+  force-carbonation PSI, right in the recipe.
+- **Refractometer support** — Brix conversions with wort correction and
+  alcohol-corrected FG (Terrill).
+- **BeerXML import & export** — bring recipes in from BeerSmith/Brewfather
+  and send them back out.
+- **Brew day mode** — every recipe generates a step-by-step checklist
+  (water treatment, mash steps, timed boil additions, whirlpool, pitch,
+  dry hops, packaging) with built-in countdown timers.
+- **Batch logging** — brew sessions snapshot predictions and track measured
+  pre-boil/OG/FG/volume, a gravity log, notes, and status; the app computes
+  actual efficiency, ABV, and attenuation and compares them to predictions.
+- **Inventory** — track grain/hops/yeast/misc stock with optional cost,
+  generate a per-recipe shopping list, and deduct a batch's ingredients on
+  brew day.
 - **Works offline** — the app runs fully from localStorage when the API isn't
   reachable, and syncs to Cosmos DB when it is.
 
@@ -129,6 +155,7 @@ npm run build && func start     # http://localhost:7071/api/health
 | Method & path | Purpose |
 |---|---|
 | `GET /api/health` | Liveness + which store is active |
+| `GET/POST /api/sessions`, `PUT/DELETE /api/sessions/{id}` | Brew session CRUD |
 | `GET /api/recipes` | List recipes (newest first) |
 | `POST /api/recipes` | Create a recipe |
 | `GET /api/recipes/{id}` | Fetch one recipe |

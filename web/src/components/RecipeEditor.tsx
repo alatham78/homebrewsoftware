@@ -142,10 +142,11 @@ interface Props {
   recipe: Recipe;
   onSave: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
+  onBrewDay: (recipe: Recipe) => void;
   onBack: () => void;
 }
 
-export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Props) {
+export function RecipeEditor({ recipe: initial, onSave, onDelete, onBrewDay, onBack }: Props) {
   const [recipe, setRecipe] = useState<Recipe>(initial);
   const [dirty, setDirty] = useState(false);
   const customFermentables = useCustomFermentables();
@@ -347,6 +348,16 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
           </button>
           <button className="btn danger" onClick={() => onDelete(recipe.id)}>
             Delete
+          </button>
+          <button
+            className="btn"
+            title="Start a brew session: step-by-step checklist with timers"
+            onClick={() => {
+              onSave(recipe);
+              onBrewDay(recipe);
+            }}
+          >
+            🔥 Brew day
           </button>
           <button className="btn primary" onClick={save}>
             {dirty ? 'Save changes' : 'Saved ✓'}

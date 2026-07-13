@@ -1,30 +1,36 @@
-import { CosmosClient, type Container } from '@azure/cosmos';
-import type { Recipe } from '@brewhaus/core';
+import { CosmosClient, type Container, type Database } from '@azure/cosmos';
 
-export interface RecipeStore {
-  list(): Promise<Recipe[]>;
-  get(id: string): Promise<Recipe | undefined>;
-  upsert(recipe: Recipe): Promise<Recipe>;
+interface Doc {
+  id: string;
+  updatedAt: string;
+}
+
+export interface DocStore<T extends Doc> {
+  list(): Promise<T[]>;
+  get(id: string): Promise<T | undefined>;
+  upsert(doc: T): Promise<T>;
   delete(id: string): Promise<boolean>;
 }
 
 /**
- * Cosmos DB (serverless) backed store. The database and container are
+ * Cosmos DB (serverless/free tier) backed store. Database and containers are
  * created on first use so a fresh deployment needs no manual setup.
- * Partition key is /id — recipe documents are small and point-read heavy,
- * which keeps RU consumption (and cost) minimal.
+ * Partition key is /id — documents are small and point-read heavy, which
+ * keeps RU consumption (and cost) minimal.
  */
-class CosmosRecipeStore implements RecipeStore {
+class CosmosDocStore<T extends Doc> implements DocStore<T> {
   private containerPromise: Promise<Container> | undefined;
 
-  constructor(private readonly connectionString: string) {}
+  constructor(
+    private readonly databasePromise: Promise<Database>,
+    private readonly containerId: string,
+  ) {}
 
   private container(): Promise<Container> {
     this.containerPromise ??= (async () => {
-      const client = new CosmosClient(this.connectionString);
-      const { database } = await client.databases.createIfNotExists({ id: 'brewhaus' });
+      const database = await this.databasePromise;
       const { container } = await database.containers.createIfNotExists({
-        id: 'recipes',
+        id: this.containerId,
         partitionKey: { paths: ['/id'] },
       });
       return container;
@@ -32,24 +38,24 @@ class CosmosRecipeStore implements RecipeStore {
     return this.containerPromise;
   }
 
-  async list(): Promise<Recipe[]> {
+  async list(): Promise<T[]> {
     const container = await this.container();
     const { resources } = await container.items
-      .query<Recipe>('SELECT * FROM c ORDER BY c.updatedAt DESC')
+      .query<T>('SELECT * FROM c ORDER BY c.updatedAt DESC')
       .fetchAll();
     return resources;
   }
 
-  async get(id: string): Promise<Recipe | undefined> {
+  async get(id: string): Promise<T | undefined> {
     const container = await this.container();
-    const { resource } = await container.item(id, id).read<Recipe>();
+    const { resource } = await container.item(id, id).read<T>();
     return resource ?? undefined;
   }
 
-  async upsert(recipe: Recipe): Promise<Recipe> {
+  async upsert(doc: T): Promise<T> {
     const container = await this.container();
-    const { resource } = await container.items.upsert<Recipe>(recipe);
-    return (resource as Recipe | undefined) ?? recipe;
+    const { resource } = await container.items.upsert<T>(doc);
+    return (resource as T | undefined) ?? doc;
   }
 
   async delete(id: string): Promise<boolean> {
@@ -65,33 +71,45 @@ class CosmosRecipeStore implements RecipeStore {
 }
 
 /** In-memory store used for local development when Cosmos is not configured. */
-class MemoryRecipeStore implements RecipeStore {
-  private readonly recipes = new Map<string, Recipe>();
+class MemoryDocStore<T extends Doc> implements DocStore<T> {
+  private readonly docs = new Map<string, T>();
 
-  async list(): Promise<Recipe[]> {
-    return [...this.recipes.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  async list(): Promise<T[]> {
+    return [...this.docs.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }
 
-  async get(id: string): Promise<Recipe | undefined> {
-    return this.recipes.get(id);
+  async get(id: string): Promise<T | undefined> {
+    return this.docs.get(id);
   }
 
-  async upsert(recipe: Recipe): Promise<Recipe> {
-    this.recipes.set(recipe.id, recipe);
-    return recipe;
+  async upsert(doc: T): Promise<T> {
+    this.docs.set(doc.id, doc);
+    return doc;
   }
 
   async delete(id: string): Promise<boolean> {
-    return this.recipes.delete(id);
+    return this.docs.delete(id);
   }
 }
 
-let store: RecipeStore | undefined;
+let databasePromise: Promise<Database> | undefined;
+const stores = new Map<string, DocStore<Doc>>();
 
-export function getStore(): RecipeStore {
+export function getStore<T extends Doc>(containerId: string): DocStore<T> {
+  let store = stores.get(containerId);
   if (!store) {
     const connectionString = process.env.COSMOS_CONNECTION_STRING;
-    store = connectionString ? new CosmosRecipeStore(connectionString) : new MemoryRecipeStore();
+    if (connectionString) {
+      databasePromise ??= (async () => {
+        const client = new CosmosClient(connectionString);
+        const { database } = await client.databases.createIfNotExists({ id: 'brewhaus' });
+        return database;
+      })();
+      store = new CosmosDocStore(databasePromise, containerId);
+    } else {
+      store = new MemoryDocStore();
+    }
+    stores.set(containerId, store);
   }
-  return store;
+  return store as DocStore<T>;
 }

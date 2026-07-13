@@ -1,17 +1,29 @@
-import { useCallback, useEffect, useState } from 'react';
-import { newRecipe, type Recipe } from '@brewhaus/core';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { newRecipe, newSession, type BrewSession, type Recipe } from '@brewhaus/core';
 import { Calculators } from './components/Calculators';
 import { Ingredients } from './components/Ingredients';
+import { InventoryPage } from './components/InventoryPage';
 import { RecipeEditor } from './components/RecipeEditor';
 import { RecipeList } from './components/RecipeList';
+import { SessionsPage } from './components/SessionsPage';
+import { SessionView } from './components/SessionView';
 import { StylesPage } from './components/StylesPage';
 import { WaterPage } from './components/WaterPage';
-import { deleteRecipe, listRecipes, saveRecipe } from './lib/store';
+import {
+  deleteRecipe,
+  deleteSession,
+  listRecipes,
+  listSessions,
+  saveRecipe,
+  saveSession,
+} from './lib/store';
 
-type Page = 'recipes' | 'tools' | 'ingredients' | 'water' | 'styles';
+type Page = 'recipes' | 'batches' | 'tools' | 'ingredients' | 'water' | 'styles' | 'inventory';
 
 const NAV: Array<{ id: Page; label: string; icon: string }> = [
   { id: 'recipes', label: 'Recipes', icon: '🍺' },
+  { id: 'batches', label: 'Batches', icon: '🔥' },
+  { id: 'inventory', label: 'Inventory', icon: '📦' },
   { id: 'tools', label: 'Brewing tools', icon: '🧮' },
   { id: 'ingredients', label: 'Ingredients', icon: '🌾' },
   { id: 'water', label: 'Water', icon: '💧' },
@@ -21,9 +33,12 @@ const NAV: Array<{ id: Page; label: string; icon: string }> = [
 export default function App() {
   const [page, setPage] = useState<Page>('recipes');
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [sessions, setSessions] = useState<BrewSession[]>([]);
   const [source, setSource] = useState<'cloud' | 'local'>('local');
   const [editing, setEditing] = useState<Recipe | null>(null);
+  const [viewingSession, setViewingSession] = useState<BrewSession | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const sessionSaveTimer = useRef<number>();
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -34,6 +49,7 @@ export default function App() {
     const { recipes: list, source: src } = await listRecipes();
     setRecipes(list);
     setSource(src);
+    setSessions(await listSessions());
   }, []);
 
   useEffect(() => {
@@ -56,6 +72,30 @@ export default function App() {
 
   const handleCreate = () => {
     setEditing(newRecipe({ name: 'New Recipe' }));
+  };
+
+  const handleBrewDay = async (recipe: Recipe) => {
+    const session = newSession(recipe);
+    session.status = 'brew day';
+    await saveSession(session);
+    setSessions((s) => [session, ...s]);
+    setEditing(null);
+    setViewingSession(session);
+    setPage('batches');
+  };
+
+  const handleSaveSession = (session: BrewSession) => {
+    setViewingSession(session);
+    setSessions((all) => [session, ...all.filter((s) => s.id !== session.id)]);
+    window.clearTimeout(sessionSaveTimer.current);
+    sessionSaveTimer.current = window.setTimeout(() => void saveSession(session), 700);
+  };
+
+  const handleDeleteSession = async (id: string) => {
+    await deleteSession(id);
+    setViewingSession(null);
+    setSessions((all) => all.filter((s) => s.id !== id));
+    showToast('Batch deleted');
   };
 
   const handleImport = async (imported: Recipe[]) => {
@@ -81,9 +121,10 @@ export default function App() {
         {NAV.map((item) => (
           <button
             key={item.id}
-            className={`nav-item ${page === item.id && !editing ? 'active' : ''}`}
+            className={`nav-item ${page === item.id && !editing && !viewingSession ? 'active' : ''}`}
             onClick={() => {
               setEditing(null);
+              setViewingSession(null);
               setPage(item.id);
             }}
           >
@@ -102,10 +143,21 @@ export default function App() {
             recipe={editing}
             onSave={handleSave}
             onDelete={handleDelete}
+            onBrewDay={(r) => void handleBrewDay(r)}
             onBack={() => {
               setEditing(null);
               void refresh();
             }}
+          />
+        ) : viewingSession ? (
+          <SessionView
+            key={viewingSession.id}
+            session={viewingSession}
+            recipe={recipes.find((r) => r.id === viewingSession.recipeId)}
+            onSave={handleSaveSession}
+            onDelete={(id) => void handleDeleteSession(id)}
+            onBack={() => setViewingSession(null)}
+            onToast={showToast}
           />
         ) : page === 'recipes' ? (
           <RecipeList
@@ -115,6 +167,10 @@ export default function App() {
             onCreate={handleCreate}
             onImport={(r) => void handleImport(r)}
           />
+        ) : page === 'batches' ? (
+          <SessionsPage sessions={sessions} onOpen={setViewingSession} />
+        ) : page === 'inventory' ? (
+          <InventoryPage recipes={recipes} />
         ) : page === 'tools' ? (
           <Calculators />
         ) : page === 'water' ? (

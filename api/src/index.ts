@@ -1,6 +1,9 @@
 import { app, type HttpRequest, type HttpResponseInit, type InvocationContext } from '@azure/functions';
-import { newRecipe, recipeStats, toBeerXml, type Recipe } from '@brewhaus/core';
+import { newRecipe, recipeStats, toBeerXml, type BrewSession, type Recipe } from '@brewhaus/core';
 import { getStore } from './store.js';
+
+const recipes = () => getStore<Recipe>('recipes');
+const sessions = () => getStore<BrewSession>('sessions');
 
 const json = (status: number, body: unknown): HttpResponseInit => ({
   status,
@@ -21,14 +24,20 @@ function normalizeRecipe(payload: unknown): Recipe | undefined {
   return recipe;
 }
 
+function normalizeSession(payload: unknown): BrewSession | undefined {
+  if (typeof payload !== 'object' || payload === null) return undefined;
+  const p = payload as Partial<BrewSession>;
+  if (typeof p.id !== 'string' || typeof p.recipeName !== 'string') return undefined;
+  return { ...p, updatedAt: new Date().toISOString() } as BrewSession;
+}
+
+// ---------- Recipes ----------
+
 app.http('recipes-list', {
   methods: ['GET'],
   route: 'recipes',
   authLevel: 'anonymous',
-  handler: async (): Promise<HttpResponseInit> => {
-    const recipes = await getStore().list();
-    return json(200, recipes);
-  },
+  handler: async (): Promise<HttpResponseInit> => json(200, await recipes().list()),
 });
 
 app.http('recipes-create', {
@@ -38,7 +47,7 @@ app.http('recipes-create', {
   handler: async (req: HttpRequest, ctx: InvocationContext): Promise<HttpResponseInit> => {
     const recipe = normalizeRecipe(await req.json().catch(() => undefined));
     if (!recipe) return json(400, { error: 'A recipe with a non-empty name is required' });
-    const saved = await getStore().upsert(recipe);
+    const saved = await recipes().upsert(recipe);
     ctx.log(`Created recipe ${saved.id}`);
     return json(201, saved);
   },
@@ -49,7 +58,7 @@ app.http('recipes-get', {
   route: 'recipes/{id}',
   authLevel: 'anonymous',
   handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
-    const recipe = await getStore().get(req.params.id ?? '');
+    const recipe = await recipes().get(req.params.id ?? '');
     return recipe ? json(200, recipe) : json(404, { error: 'Recipe not found' });
   },
 });
@@ -63,8 +72,7 @@ app.http('recipes-update', {
     const recipe = normalizeRecipe(await req.json().catch(() => undefined));
     if (!recipe) return json(400, { error: 'A recipe with a non-empty name is required' });
     recipe.id = id;
-    const saved = await getStore().upsert(recipe);
-    return json(200, saved);
+    return json(200, await recipes().upsert(recipe));
   },
 });
 
@@ -73,7 +81,7 @@ app.http('recipes-delete', {
   route: 'recipes/{id}',
   authLevel: 'anonymous',
   handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
-    const deleted = await getStore().delete(req.params.id ?? '');
+    const deleted = await recipes().delete(req.params.id ?? '');
     return deleted ? json(204, undefined) : json(404, { error: 'Recipe not found' });
   },
 });
@@ -83,7 +91,7 @@ app.http('recipes-stats', {
   route: 'recipes/{id}/stats',
   authLevel: 'anonymous',
   handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
-    const recipe = await getStore().get(req.params.id ?? '');
+    const recipe = await recipes().get(req.params.id ?? '');
     if (!recipe) return json(404, { error: 'Recipe not found' });
     return json(200, recipeStats(recipe));
   },
@@ -94,7 +102,7 @@ app.http('recipes-beerxml', {
   route: 'recipes/{id}/beerxml',
   authLevel: 'anonymous',
   handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
-    const recipe = await getStore().get(req.params.id ?? '');
+    const recipe = await recipes().get(req.params.id ?? '');
     if (!recipe) return json(404, { error: 'Recipe not found' });
     return {
       status: 200,
@@ -104,6 +112,49 @@ app.http('recipes-beerxml', {
       },
       body: toBeerXml(recipe),
     };
+  },
+});
+
+// ---------- Brew sessions ----------
+
+app.http('sessions-list', {
+  methods: ['GET'],
+  route: 'sessions',
+  authLevel: 'anonymous',
+  handler: async (): Promise<HttpResponseInit> => json(200, await sessions().list()),
+});
+
+app.http('sessions-create', {
+  methods: ['POST'],
+  route: 'sessions',
+  authLevel: 'anonymous',
+  handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
+    const session = normalizeSession(await req.json().catch(() => undefined));
+    if (!session) return json(400, { error: 'A session with id and recipeName is required' });
+    return json(201, await sessions().upsert(session));
+  },
+});
+
+app.http('sessions-update', {
+  methods: ['PUT'],
+  route: 'sessions/{id}',
+  authLevel: 'anonymous',
+  handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
+    const id = req.params.id ?? '';
+    const session = normalizeSession(await req.json().catch(() => undefined));
+    if (!session) return json(400, { error: 'A session with id and recipeName is required' });
+    session.id = id;
+    return json(200, await sessions().upsert(session));
+  },
+});
+
+app.http('sessions-delete', {
+  methods: ['DELETE'],
+  route: 'sessions/{id}',
+  authLevel: 'anonymous',
+  handler: async (req: HttpRequest): Promise<HttpResponseInit> => {
+    const deleted = await sessions().delete(req.params.id ?? '');
+    return deleted ? json(204, undefined) : json(404, { error: 'Session not found' });
   },
 });
 

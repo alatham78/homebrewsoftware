@@ -1,4 +1,4 @@
-import { newRecipe, type Recipe } from '@brewhaus/core';
+import { newRecipe, type BrewSession, type Recipe } from '@brewhaus/core';
 
 /**
  * Recipe persistence: talks to the serverless API when it's reachable and
@@ -67,6 +67,53 @@ export async function deleteRecipe(id: string): Promise<void> {
   writeLocal(readLocal().filter((r) => r.id !== id));
 }
 
+// ---------- Brew sessions ----------
+
+const LS_SESSIONS = 'brewhaus.sessions';
+
+function readLocalSessions(): BrewSession[] {
+  try {
+    const raw = localStorage.getItem(LS_SESSIONS);
+    return raw ? (JSON.parse(raw) as BrewSession[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSessions(sessions: BrewSession[]): void {
+  localStorage.setItem(LS_SESSIONS, JSON.stringify(sessions));
+}
+
+export async function listSessions(): Promise<BrewSession[]> {
+  if (await probeApi()) {
+    const res = await fetch('/api/sessions');
+    if (res.ok) return (await res.json()) as BrewSession[];
+  }
+  return readLocalSessions();
+}
+
+export async function saveSession(session: BrewSession): Promise<BrewSession> {
+  const updated = { ...session, updatedAt: new Date().toISOString() };
+  if (await probeApi()) {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(updated.id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    if (res.ok) return (await res.json()) as BrewSession;
+  }
+  writeLocalSessions([updated, ...readLocalSessions().filter((s) => s.id !== updated.id)]);
+  return updated;
+}
+
+export async function deleteSession(id: string): Promise<void> {
+  if (await probeApi()) {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (res.ok || res.status === 404) return;
+  }
+  writeLocalSessions(readLocalSessions().filter((s) => s.id !== id));
+}
+
 /** Two starter recipes so the first run isn't an empty screen. */
 export function seedRecipes(): Recipe[] {
   const ipa = newRecipe({
@@ -78,9 +125,9 @@ export function seedRecipes(): Recipe[] {
     boilSizeGal: 6.5,
     efficiencyPct: 72,
     fermentables: [
-      { fermentableId: 'pale-2row', name: '2-Row Pale Malt (US)', type: 'grain', potential: 1.037, lovibond: 1.8, mustMash: true, amountLb: 11 },
+      { fermentableId: 'pale-2row', name: '2-Row Pale Malt', type: 'grain', potential: 1.037, lovibond: 1.8, mustMash: true, amountLb: 11 },
       { fermentableId: 'flaked-oats', name: 'Flaked Oats', type: 'adjunct', potential: 1.033, lovibond: 1.0, mustMash: true, amountLb: 1.5 },
-      { fermentableId: 'white-wheat', name: 'White Wheat Malt (US)', type: 'grain', potential: 1.04, lovibond: 2.4, mustMash: true, amountLb: 1.5 },
+      { fermentableId: 'white-wheat', name: 'White Wheat Malt', type: 'grain', potential: 1.04, lovibond: 2.4, mustMash: true, amountLb: 1.5 },
     ],
     hops: [
       { hopId: 'magnum', name: 'Magnum', alpha: 12, amountOz: 0.5, use: 'boil', timeMin: 60, form: 'pellet' },
@@ -103,7 +150,7 @@ export function seedRecipes(): Recipe[] {
     boilSizeGal: 6.5,
     efficiencyPct: 72,
     fermentables: [
-      { fermentableId: 'pale-maris-otter', name: 'Maris Otter (UK)', type: 'grain', potential: 1.038, lovibond: 3.0, mustMash: true, amountLb: 7 },
+      { fermentableId: 'pale-maris-otter', name: 'Maris Otter', type: 'grain', potential: 1.038, lovibond: 3.0, mustMash: true, amountLb: 7 },
       { fermentableId: 'flaked-wheat', name: 'Flaked Wheat', type: 'adjunct', potential: 1.034, lovibond: 1.6, mustMash: true, amountLb: 1 },
       { fermentableId: 'roasted-barley', name: 'Roasted Barley', type: 'grain', potential: 1.025, lovibond: 300, mustMash: true, amountLb: 1 },
     ],

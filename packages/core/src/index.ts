@@ -7,5 +7,7 @@ export * from './factory.js';
 export * from './water.js';
 export * from './equipment.js';
 export * from './beerxml-import.js';
+export * from './brewday.js';
+export * from './session.js';
 export * from './pitching.js';
 export * from './packaging.js';
