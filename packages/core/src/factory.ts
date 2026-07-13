@@ -1,3 +1,4 @@
+import { defaultEquipment } from './equipment.js';
 import type { Recipe } from './types.js';
 
 function generateId(): string {
@@ -20,7 +21,15 @@ export function newRecipe(partial: Partial<Recipe> = {}): Recipe {
     fermentables: [],
     hops: [],
     yeast: null,
-    mash: { mashTempF: 152, mashTimeMin: 60, ratioQtPerLb: 1.5 },
+    miscs: [],
+    mash: {
+      mashTempF: 152,
+      mashTimeMin: 60,
+      ratioQtPerLb: 1.5,
+      steps: [{ name: 'Saccharification', type: 'infusion', tempF: 152, timeMin: 60 }],
+      spargeType: 'batch',
+    },
+    equipment: defaultEquipment(),
     carbonationVols: 2.4,
     water: {
       sourceName: 'Distilled / RO',

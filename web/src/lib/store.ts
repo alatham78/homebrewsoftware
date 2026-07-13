@@ -33,12 +33,15 @@ function writeLocal(recipes: Recipe[]): void {
   localStorage.setItem(LS_KEY, JSON.stringify(recipes));
 }
 
+/** Fill defaults for recipes saved before newer fields (equipment, miscs, water…) existed. */
+const normalize = (r: Recipe): Recipe => newRecipe(r);
+
 export async function listRecipes(): Promise<{ recipes: Recipe[]; source: 'cloud' | 'local' }> {
   if (await probeApi()) {
     const res = await fetch('/api/recipes');
-    if (res.ok) return { recipes: (await res.json()) as Recipe[], source: 'cloud' };
+    if (res.ok) return { recipes: ((await res.json()) as Recipe[]).map(normalize), source: 'cloud' };
   }
-  return { recipes: readLocal(), source: 'local' };
+  return { recipes: readLocal().map(normalize), source: 'local' };
 }
 
 export async function saveRecipe(recipe: Recipe): Promise<Recipe> {

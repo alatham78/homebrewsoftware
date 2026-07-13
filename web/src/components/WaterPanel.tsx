@@ -44,7 +44,11 @@ export function WaterPanel({
   const water = recipe.water ?? defaultWater();
 
   const totalGrainLb = recipe.fermentables.reduce((s, f) => s + f.amountLb, 0);
-  const waterGal = totalBrewingWaterGal(recipe.boilSizeGal, totalGrainLb);
+  const waterGal = recipe.equipment
+    ? recipe.boilSizeGal +
+      recipe.equipment.grainAbsorptionGalPerLb * totalGrainLb +
+      recipe.equipment.lauterDeadspaceGal
+    : totalBrewingWaterGal(recipe.boilSizeGal, totalGrainLb);
   const target = waterTargetById(water.targetId) ?? WATER_TARGETS[2]!;
   const result = applySalts(water.source, water.salts, waterGal);
   const ratio = sulfateChlorideRatio(result);

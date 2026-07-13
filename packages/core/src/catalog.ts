@@ -1,4 +1,4 @@
-import type { Fermentable, FermentableGroup, Hop, Yeast } from './types.js';
+import type { Fermentable, FermentableGroup, Hop, MiscType, MiscUnit, MiscUse, Yeast } from './types.js';
 
 /** Display order for fermentable groups in pickers and the browser. */
 export const FERMENTABLE_GROUPS: FermentableGroup[] = [
@@ -330,6 +330,28 @@ export const YEASTS: Yeast[] = [
   liquid('oyl-071', 'OYL-071', 'Lutra Kveik', 78, 68, 95, 'Omega', 'Ultra-clean pseudo-lager kveik'),
   liquid('a07', 'A07', 'Flagship', 75, 60, 72, 'Imperial', 'Clean American ale, chico family'),
   liquid('a38', 'A38', 'Juice', 74, 64, 74, 'Imperial', 'Fruity London III-style hazy strain'),
+];
+
+/** Quick-add templates for common misc additions (fully editable per recipe). */
+export const MISC_CATALOG: Array<{ name: string; type: MiscType; use: MiscUse; amount: number; unit: MiscUnit; timeMin: number; note?: string }> = [
+  { name: 'Whirlfloc tablet', type: 'fining', use: 'boil', amount: 1, unit: 'each', timeMin: 15 },
+  { name: 'Irish moss', type: 'fining', use: 'boil', amount: 1, unit: 'tsp', timeMin: 15 },
+  { name: 'Yeast nutrient', type: 'other', use: 'boil', amount: 1, unit: 'tsp', timeMin: 10 },
+  { name: 'Gelatin (fining)', type: 'fining', use: 'secondary', amount: 1, unit: 'tsp', timeMin: 2, note: 'Bloom in cold water, add to chilled beer' },
+  { name: 'Biofine Clear', type: 'fining', use: 'secondary', amount: 5, unit: 'ml', timeMin: 2 },
+  { name: 'Coriander (crushed)', type: 'spice', use: 'boil', amount: 28, unit: 'g', timeMin: 5 },
+  { name: 'Bitter orange peel', type: 'spice', use: 'boil', amount: 28, unit: 'g', timeMin: 5 },
+  { name: 'Sweet orange peel', type: 'spice', use: 'boil', amount: 14, unit: 'g', timeMin: 5 },
+  { name: 'Grains of paradise', type: 'spice', use: 'boil', amount: 5, unit: 'g', timeMin: 5 },
+  { name: 'Cinnamon stick', type: 'spice', use: 'boil', amount: 1, unit: 'each', timeMin: 10 },
+  { name: 'Vanilla bean (split)', type: 'flavor', use: 'secondary', amount: 2, unit: 'each', timeMin: 7 },
+  { name: 'Cacao nibs', type: 'flavor', use: 'secondary', amount: 4, unit: 'oz', timeMin: 7 },
+  { name: 'Oak cubes (medium toast)', type: 'flavor', use: 'secondary', amount: 1, unit: 'oz', timeMin: 14 },
+  { name: 'Raspberry purée', type: 'fruit', use: 'secondary', amount: 3, unit: 'lb', timeMin: 7 },
+  { name: 'Tart cherry purée', type: 'fruit', use: 'secondary', amount: 3, unit: 'lb', timeMin: 7 },
+  { name: 'Lactic acid 88%', type: 'water agent', use: 'mash', amount: 4, unit: 'ml', timeMin: 60 },
+  { name: 'Campden tablet (metabisulfite)', type: 'water agent', use: 'mash', amount: 0.5, unit: 'each', timeMin: 60, note: 'Dechlorinates up to ~10 gal' },
+  { name: 'Sea salt (flaked)', type: 'spice', use: 'boil', amount: 10, unit: 'g', timeMin: 5, note: 'Gose' },
 ];
 
 export const fermentableById = (id: string): Fermentable | undefined =>

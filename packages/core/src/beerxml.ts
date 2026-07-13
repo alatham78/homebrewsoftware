@@ -1,6 +1,6 @@
 import { recipeStats } from './calc.js';
 import { styleById } from './styles.js';
-import type { HopUse, Recipe } from './types.js';
+import type { HopUse, MiscAddition, MiscUnit, Recipe } from './types.js';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -8,6 +8,41 @@ const esc = (s: string): string =>
 const LB_TO_KG = 0.45359237;
 const OZ_TO_KG = 0.028349523;
 const GAL_TO_L = 3.785411784;
+
+const MISC_UNIT_TO_KG: Partial<Record<MiscUnit, number>> = {
+  g: 0.001,
+  oz: 0.028349523,
+  lb: 0.45359237,
+};
+
+function miscXml(m: MiscAddition): string {
+  const weightKg = MISC_UNIT_TO_KG[m.unit];
+  const useXml =
+    m.use === 'mash' ? 'Mash'
+    : m.use === 'boil' ? 'Boil'
+    : m.use === 'whirlpool' ? 'Boil'
+    : m.use === 'primary' ? 'Primary'
+    : m.use === 'secondary' ? 'Secondary'
+    : 'Bottling';
+  const typeXml =
+    m.type === 'spice' ? 'Spice'
+    : m.type === 'fining' ? 'Fining'
+    : m.type === 'water agent' ? 'Water Agent'
+    : m.type === 'herb' ? 'Herb'
+    : m.type === 'flavor' ? 'Flavor'
+    : 'Other';
+  const days = m.use === 'primary' || m.use === 'secondary';
+  return `      <MISC>
+        <NAME>${esc(m.name)}</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>${typeXml}</TYPE>
+        <USE>${useXml}</USE>
+        <TIME>${days ? m.timeMin * 24 * 60 : m.timeMin}</TIME>
+        <AMOUNT>${weightKg ? (m.amount * weightKg).toFixed(4) : m.amount}</AMOUNT>
+        <AMOUNT_IS_WEIGHT>${weightKg ? 'TRUE' : 'FALSE'}</AMOUNT_IS_WEIGHT>
+        <NOTES>${esc(m.note ?? (weightKg ? '' : `${m.amount} ${m.unit}`))}</NOTES>
+      </MISC>`;
+}
 
 function hopUseXml(use: HopUse): string {
   switch (use) {
@@ -107,13 +142,20 @@ export function toBeerXml(recipe: Recipe): string {
       <VERSION>1</VERSION>
       <GRAIN_TEMP>20.0</GRAIN_TEMP>
       <MASH_STEPS>
-        <MASH_STEP>
-          <NAME>Saccharification</NAME>
+${(recipe.mash.steps && recipe.mash.steps.length > 0
+  ? recipe.mash.steps
+  : [{ name: 'Saccharification', type: 'infusion' as const, tempF: recipe.mash.mashTempF, timeMin: recipe.mash.mashTimeMin }]
+)
+  .map(
+    (s) => `        <MASH_STEP>
+          <NAME>${esc(s.name)}</NAME>
           <VERSION>1</VERSION>
-          <TYPE>Infusion</TYPE>
-          <STEP_TEMP>${(((recipe.mash.mashTempF - 32) * 5) / 9).toFixed(1)}</STEP_TEMP>
-          <STEP_TIME>${recipe.mash.mashTimeMin}</STEP_TIME>
-        </MASH_STEP>
+          <TYPE>${s.type === 'decoction' ? 'Decoction' : s.type === 'temperature' ? 'Temperature' : 'Infusion'}</TYPE>
+          <STEP_TEMP>${(((s.tempF - 32) * 5) / 9).toFixed(1)}</STEP_TEMP>
+          <STEP_TIME>${s.timeMin}</STEP_TIME>
+        </MASH_STEP>`,
+  )
+  .join('\n')}
       </MASH_STEPS>
     </MASH>
     <FERMENTABLES>
@@ -125,7 +167,9 @@ ${hops}
     <YEASTS>
 ${yeast}
     </YEASTS>
-    <MISCS></MISCS>
+    <MISCS>
+${(recipe.miscs ?? []).map(miscXml).join('\n')}
+    </MISCS>
     <WATERS></WATERS>
   </RECIPE>
 </RECIPES>
