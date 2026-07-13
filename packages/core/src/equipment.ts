@@ -1,4 +1,4 @@
-import type { EquipmentProfile, MashProfile, Recipe } from './types.js';
+import type { EquipmentProfile, MashProfile, Recipe, SpargeType } from './types.js';
 
 /**
  * Equipment-driven volume predictions. All volumes in US gallons unless
@@ -10,7 +10,13 @@ import type { EquipmentProfile, MashProfile, Recipe } from './types.js';
  *   strike     = ratio × grist;  sparge = mash water − strike
  */
 
-export const EQUIPMENT_PRESETS: Array<EquipmentProfile & { id: string }> = [
+export interface EquipmentPreset extends EquipmentProfile {
+  id: string;
+  /** Sparge method the system is designed around (applied on selection) */
+  defaultSpargeType?: SpargeType;
+}
+
+export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
   {
     id: 'kettle-10',
     name: 'Standard 10 gal kettle + cooler',
@@ -47,11 +53,70 @@ export const EQUIPMENT_PRESETS: Array<EquipmentProfile & { id: string }> = [
     grainAbsorptionGalPerLb: 0.12,
     fermenterLossGal: 0.5,
   },
+  // Blichmann Pro Pilot / Pilot HERMS systems: three BoilerMaker vessels,
+  // AutoSparge (fly sparge), Therminator plate chiller. Loss values are
+  // community-typical starting points — Blichmann doesn't publish them;
+  // dial them in from your first measured batch.
+  {
+    id: 'blichmann-pilot-5',
+    name: 'Blichmann Pilot HERMS — 5 gal (10 gal kettles)',
+    boilOffGalPerHour: 1.0,
+    kettleDeadspaceGal: 0.5,
+    lauterDeadspaceGal: 0.25,
+    grainAbsorptionGalPerLb: 0.12,
+    fermenterLossGal: 0.5,
+    defaultSpargeType: 'fly',
+  },
+  {
+    id: 'blichmann-pilot-10',
+    name: 'Blichmann Pro Pilot HERMS — 10 gal (20 gal boil kettle)',
+    boilOffGalPerHour: 1.25,
+    kettleDeadspaceGal: 0.75,
+    lauterDeadspaceGal: 0.5,
+    grainAbsorptionGalPerLb: 0.12,
+    fermenterLossGal: 0.5,
+    defaultSpargeType: 'fly',
+  },
+  {
+    id: 'blichmann-pilot-15',
+    name: 'Blichmann Pro Pilot HERMS — 15 gal (30 gal boil kettle)',
+    boilOffGalPerHour: 1.5,
+    kettleDeadspaceGal: 1.0,
+    lauterDeadspaceGal: 0.5,
+    grainAbsorptionGalPerLb: 0.12,
+    fermenterLossGal: 0.75,
+    defaultSpargeType: 'fly',
+  },
+  {
+    id: 'blichmann-pilot-20',
+    name: 'Blichmann Pro Pilot HERMS — 20 gal (30 gal kettles)',
+    boilOffGalPerHour: 1.75,
+    kettleDeadspaceGal: 1.0,
+    lauterDeadspaceGal: 0.75,
+    grainAbsorptionGalPerLb: 0.12,
+    fermenterLossGal: 1.0,
+    defaultSpargeType: 'fly',
+  },
+  {
+    id: 'blichmann-pilot-1bbl',
+    name: 'Blichmann Pro Pilot HERMS — 1 BBL (31 gal)',
+    boilOffGalPerHour: 2.5,
+    kettleDeadspaceGal: 1.5,
+    lauterDeadspaceGal: 1.0,
+    grainAbsorptionGalPerLb: 0.12,
+    fermenterLossGal: 1.5,
+    defaultSpargeType: 'fly',
+  },
 ];
 
-export function defaultEquipment(): EquipmentProfile {
-  const { id: _id, ...profile } = EQUIPMENT_PRESETS[0]!;
+/** The plain equipment profile of a preset (drops preset-only metadata). */
+export function presetProfile(preset: EquipmentPreset): EquipmentProfile {
+  const { id: _id, defaultSpargeType: _sparge, ...profile } = preset;
   return { ...profile };
+}
+
+export function defaultEquipment(): EquipmentProfile {
+  return presetProfile(EQUIPMENT_PRESETS[0]!);
 }
 
 export interface VolumeBreakdown {

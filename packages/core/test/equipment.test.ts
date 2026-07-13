@@ -5,6 +5,7 @@ import {
   EQUIPMENT_PRESETS,
   infusionVolumeQt,
   newRecipe,
+  presetProfile,
   suggestedBoilSizeGal,
   toBeerXml,
   volumeBreakdown,
@@ -36,11 +37,29 @@ describe('equipment volume math', () => {
   });
 
   it('ships sane presets', () => {
-    expect(EQUIPMENT_PRESETS.length).toBeGreaterThanOrEqual(4);
+    expect(EQUIPMENT_PRESETS.length).toBeGreaterThanOrEqual(9);
     for (const p of EQUIPMENT_PRESETS) {
       expect(p.boilOffGalPerHour).toBeGreaterThan(0);
       expect(p.grainAbsorptionGalPerLb).toBeGreaterThan(0);
     }
+  });
+
+  it('covers the Blichmann Pro Pilot HERMS lineup with fly sparge defaults', () => {
+    const blichmann = EQUIPMENT_PRESETS.filter((p) => p.id.startsWith('blichmann-pilot'));
+    expect(blichmann.map((p) => p.id)).toEqual([
+      'blichmann-pilot-5',
+      'blichmann-pilot-10',
+      'blichmann-pilot-15',
+      'blichmann-pilot-20',
+      'blichmann-pilot-1bbl',
+    ]);
+    for (const p of blichmann) {
+      expect(p.defaultSpargeType, p.id).toBe('fly'); // AutoSparge
+      expect('defaultSpargeType' in presetProfile(p)).toBe(false); // stripped from recipes
+    }
+    // Bigger systems boil off and lose more
+    const boilOffs = blichmann.map((p) => p.boilOffGalPerHour);
+    expect([...boilOffs].sort((a, b) => a - b)).toEqual(boilOffs);
   });
 });
 

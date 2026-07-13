@@ -12,6 +12,7 @@ import {
   infusionVolumeQt,
   kegPsi,
   MISC_CATALOG,
+  presetProfile,
   PRIMING_SUGARS,
   primingSugarGramsFor,
   STYLE_CATEGORIES,
@@ -306,8 +307,12 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBrewDay, onB
   const setEquipmentPreset = (id: string) => {
     const preset = EQUIPMENT_PRESETS.find((p) => p.id === id);
     if (preset) {
-      const { id: _id, ...profile } = preset;
-      patch({ equipment: { ...profile } });
+      patch({
+        equipment: presetProfile(preset),
+        ...(preset.defaultSpargeType
+          ? { mash: { ...recipe.mash, spargeType: preset.defaultSpargeType } }
+          : {}),
+      });
     }
   };
   const patchEquipment = (p: Partial<Recipe['equipment'] & object>) =>
