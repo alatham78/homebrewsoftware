@@ -6,3 +6,5 @@ export * from './beerxml.js';
 export * from './factory.js';
 export * from './water.js';
 export * from './equipment.js';
+export * from './pitching.js';
+export * from './packaging.js';

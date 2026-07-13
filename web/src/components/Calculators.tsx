@@ -1,10 +1,20 @@
 import { useState } from 'react';
 import {
   abv,
+  abvFromRefractometer,
+  brixToSg,
+  cellsNeededBillion,
+  fgFromRefractometer,
   gravityAtVolume,
   hydrometerCorrection,
-  primingSugarGrams,
+  kegPsi,
+  packCellsBillion,
+  PRIMING_SUGARS,
+  primingSugarGramsFor,
+  recommendStarter,
   strikeWaterTempF,
+  type BeerFerment,
+  type YeastForm,
 } from '@brewhaus/core';
 
 function Num({ label, value, onChange, step = 0.001 }: { label: string; value: number; onChange: (v: number) => void; step?: number }) {
@@ -60,18 +70,122 @@ function PrimingCalc() {
   const [gal, setGal] = useState(5);
   const [temp, setTemp] = useState(68);
   const [vols, setVols] = useState(2.4);
-  const grams = primingSugarGrams(gal, temp, vols);
+  const [sugar, setSugar] = useState('corn');
+  const grams = primingSugarGramsFor(sugar, gal, temp, vols);
+  const sugarName = PRIMING_SUGARS.find((s) => s.id === sugar)?.name ?? 'sugar';
   return (
     <section className="card">
-      <h2 className="section-title">Priming sugar</h2>
+      <h2 className="section-title">Priming sugar (bottles)</h2>
       <div className="field-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
         <Num label="Beer volume (gal)" value={gal} onChange={setGal} step={0.25} />
         <Num label="Beer temp (°F)" value={temp} onChange={setTemp} step={1} />
         <Num label="Target CO₂ (vols)" value={vols} onChange={setVols} step={0.1} />
       </div>
+      <label className="field" style={{ marginTop: 14 }}>
+        Sugar
+        <select value={sugar} onChange={(e) => setSugar(e.target.value)}>
+          {PRIMING_SUGARS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="calc-result">
-        <strong>{grams.toFixed(0)} g corn sugar</strong>
-        That’s {(grams / 28.35).toFixed(1)} oz of dextrose at bottling
+        <strong>{grams.toFixed(0)} g {sugarName.toLowerCase()}</strong>
+        That’s {(grams / 28.35).toFixed(1)} oz at bottling
+      </div>
+    </section>
+  );
+}
+
+function KegCalc() {
+  const [temp, setTemp] = useState(38);
+  const [vols, setVols] = useState(2.4);
+  const psi = kegPsi(temp, vols);
+  return (
+    <section className="card">
+      <h2 className="section-title">Keg force carbonation</h2>
+      <div className="field-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <Num label="Keg temp (°F)" value={temp} onChange={setTemp} step={1} />
+        <Num label="Target CO₂ (vols)" value={vols} onChange={setVols} step={0.1} />
+      </div>
+      <div className="calc-result">
+        <strong>{psi.toFixed(1)} PSI</strong>
+        Set-and-forget regulator pressure; allow ~1–2 weeks to equilibrate
+      </div>
+    </section>
+  );
+}
+
+function PitchCalc() {
+  const [og, setOg] = useState(1.052);
+  const [gal, setGal] = useState(5);
+  const [ferment, setFerment] = useState<BeerFerment>('ale');
+  const [packs, setPacks] = useState(1);
+  const [form, setForm] = useState<YeastForm>('liquid');
+  const [ageDays, setAgeDays] = useState(30);
+
+  const needed = cellsNeededBillion(og, gal, ferment);
+  const available = packCellsBillion(packs, ageDays, form);
+  const plan = recommendStarter(needed, available);
+
+  return (
+    <section className="card">
+      <h2 className="section-title">Yeast pitch & starter</h2>
+      <div className="field-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+        <Num label="Original gravity" value={og} onChange={setOg} />
+        <Num label="Volume (gal)" value={gal} onChange={setGal} step={0.25} />
+        <label className="field">
+          Fermentation
+          <select value={ferment} onChange={(e) => setFerment(e.target.value as BeerFerment)}>
+            <option value="ale">ale</option>
+            <option value="hybrid">hybrid</option>
+            <option value="lager">lager</option>
+          </select>
+        </label>
+        <Num label="Packs" value={packs} onChange={setPacks} step={1} />
+        <label className="field">
+          Form
+          <select value={form} onChange={(e) => setForm(e.target.value as YeastForm)}>
+            <option value="liquid">liquid (~100 B)</option>
+            <option value="dry">dry (~200 B)</option>
+          </select>
+        </label>
+        <Num label="Pack age (days)" value={ageDays} onChange={setAgeDays} step={1} />
+      </div>
+      <div className="calc-result">
+        <strong>
+          {plan.liters === 0
+            ? 'No starter needed'
+            : plan.sufficient
+              ? `Make a ${plan.liters} L starter`
+              : `Even a 4 L starter falls short — add a pack`}
+        </strong>
+        Need ~{Math.round(needed)} B cells · have ~{Math.round(available)} B viable
+        {plan.liters > 0 && ` · starter yields ~${Math.round(plan.finalBillion)} B`}
+      </div>
+    </section>
+  );
+}
+
+function RefractometerCalc() {
+  const [ob, setOb] = useState(12.5);
+  const [fb, setFb] = useState(6);
+  const [wcf, setWcf] = useState(1.04);
+  const og = brixToSg(ob, wcf);
+  const fg = fgFromRefractometer(ob, fb, wcf);
+  return (
+    <section className="card">
+      <h2 className="section-title">Refractometer</h2>
+      <div className="field-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+        <Num label="Original (°Brix)" value={ob} onChange={setOb} step={0.1} />
+        <Num label="Current (°Brix)" value={fb} onChange={setFb} step={0.1} />
+        <Num label="Wort correction" value={wcf} onChange={setWcf} step={0.01} />
+      </div>
+      <div className="calc-result">
+        <strong>{abvFromRefractometer(ob, fb, wcf).toFixed(1)}% ABV</strong>
+        OG {og.toFixed(3)} · FG {fg.toFixed(3)} (alcohol-corrected, Terrill linear)
       </div>
     </section>
   );
@@ -129,7 +243,10 @@ export function Calculators() {
       <div className="calc-grid">
         <AbvCalc />
         <StrikeCalc />
+        <PitchCalc />
         <PrimingCalc />
+        <KegCalc />
+        <RefractometerCalc />
         <HydrometerCalc />
         <DilutionCalc />
       </div>

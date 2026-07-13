@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   BEER_STYLES,
+  cellsNeededBillion,
   decoctionVolumeQt,
   defaultEquipment,
   EQUIPMENT_PRESETS,
@@ -9,7 +10,10 @@ import {
   HOP_ORIGINS,
   HOPS,
   infusionVolumeQt,
+  kegPsi,
   MISC_CATALOG,
+  PRIMING_SUGARS,
+  primingSugarGramsFor,
   volumeBreakdown,
   YEAST_LABS,
   YEASTS,
@@ -552,6 +556,11 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
                 />
               </label>
             </div>
+            <p className="empty-hint" style={{ paddingBottom: 0 }}>
+              Pitch ~{Math.round(cellsNeededBillion(stats.og, recipe.batchSizeGal, 'ale'))} B cells (ale) /{' '}
+              ~{Math.round(cellsNeededBillion(stats.og, recipe.batchSizeGal, 'lager'))} B (lager) — size a
+              starter in Brewing tools.
+            </p>
           </section>
 
           <section className="card">
@@ -805,6 +814,29 @@ export function RecipeEditor({ recipe: initial, onSave, onDelete, onBack }: Prop
               >
                 + Add custom
               </button>
+            </div>
+          </section>
+
+          <section className="card">
+            <h2 className="section-title">Packaging</h2>
+            <div className="field-row" style={{ gridTemplateColumns: '1fr 3fr', alignItems: 'end' }}>
+              <label className="field">
+                Target CO₂ (vols)
+                <input
+                  type="number"
+                  min={1}
+                  max={4.5}
+                  step={0.1}
+                  value={recipe.carbonationVols}
+                  onChange={patchNum('carbonationVols')}
+                />
+              </label>
+              <p className="empty-hint" style={{ paddingBottom: 6 }}>
+                Bottles: {primingSugarGramsFor('corn', recipe.batchSizeGal, 68, recipe.carbonationVols).toFixed(0)} g corn
+                sugar or {primingSugarGramsFor('table', recipe.batchSizeGal, 68, recipe.carbonationVols).toFixed(0)} g table
+                sugar (beer at 68 °F) · Keg: {kegPsi(38, recipe.carbonationVols).toFixed(1)} PSI at 38 °F ·{' '}
+                {PRIMING_SUGARS.length} sugar types in Brewing tools
+              </p>
             </div>
           </section>
 
