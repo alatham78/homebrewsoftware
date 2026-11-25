@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   decoctionVolumeQt,
+  DEFAULT_BATCH_SIZE_GAL,
+  DEFAULT_EQUIPMENT_PRESET_ID,
   defaultEquipment,
   EQUIPMENT_PRESETS,
   infusionVolumeQt,
@@ -12,7 +14,8 @@ import {
 } from '../src/index.js';
 
 describe('equipment volume math', () => {
-  const eq = defaultEquipment(); // 1.0 gal/hr boil-off, 0.5 kettle, 0.25 lauter, 0.12 gal/lb, 0.25 ferm loss
+  // 10 gal kettle + cooler: 1.0 gal/hr boil-off, 0.5 kettle, 0.25 lauter, 0.12 gal/lb, 0.25 ferm loss
+  const eq = presetProfile(EQUIPMENT_PRESETS.find((p) => p.id === 'kettle-10')!);
 
   it('walks volumes backward from the fermenter', () => {
     const v = volumeBreakdown(5, 60, 12, eq, { ratioQtPerLb: 1.5, spargeType: 'batch' });
@@ -32,8 +35,33 @@ describe('equipment volume math', () => {
 
   it('suggests the boil size for a recipe with equipment', () => {
     const recipe = newRecipe();
-    expect(suggestedBoilSizeGal(recipe)).toBeCloseTo(5.5 + 1, 2); // no grain yet
+    // Pro Pilot 5-gal system: 5 gal + 0.5 kettle loss + 1.0 gal/hr × 1 hr
+    expect(suggestedBoilSizeGal(recipe)).toBeCloseTo(6.5, 2);
     expect(suggestedBoilSizeGal({ ...recipe, equipment: undefined })).toBeUndefined();
+  });
+
+  it('starts new recipes on the 5-gal Blichmann Pro Pilot (10 gal kettles)', () => {
+    const recipe = newRecipe();
+    const proPilot5 = presetProfile(EQUIPMENT_PRESETS.find((p) => p.id === 'blichmann-pilot-5')!);
+    expect(DEFAULT_EQUIPMENT_PRESET_ID).toBe('blichmann-pilot-5');
+    expect(defaultEquipment()).toEqual(proPilot5);
+    expect(recipe.equipment).toEqual(proPilot5);
+    expect(recipe.equipment!.name).toContain('10 gal kettles');
+    expect(recipe.batchSizeGal).toBe(DEFAULT_BATCH_SIZE_GAL);
+    expect(DEFAULT_BATCH_SIZE_GAL).toBe(5);
+    expect(recipe.mash.spargeType).toBe('fly'); // AutoSparge
+    // Boil size already matches the rig, so the editor shows no "use suggested" prompt
+    expect(recipe.boilSizeGal).toBeCloseTo(suggestedBoilSizeGal(recipe)!, 2);
+  });
+
+  it('keeps explicit overrides and fills gaps from the default rig', () => {
+    const custom = newRecipe({ batchSizeGal: 10, mash: { mashTempF: 150, mashTimeMin: 60, ratioQtPerLb: 1.25 } });
+    expect(custom.batchSizeGal).toBe(10);
+    expect(custom.mash.spargeType).toBe('fly');
+    const batch = newRecipe({ mash: { mashTempF: 150, mashTimeMin: 60, ratioQtPerLb: 1.25, spargeType: 'batch' } });
+    expect(batch.mash.spargeType).toBe('batch');
+    const fresh = newRecipe({ id: undefined as unknown as string });
+    expect(fresh.id).toMatch(/.+/);
   });
 
   it('ships sane presets', () => {

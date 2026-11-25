@@ -122,7 +122,6 @@ export function seedRecipes(): Recipe[] {
     author: 'BrewHaus',
     styleId: 'hazy-ipa',
     batchSizeGal: 5,
-    boilSizeGal: 6.5,
     efficiencyPct: 72,
     fermentables: [
       { fermentableId: 'pale-2row', name: '2-Row Pale Malt', type: 'grain', potential: 1.037, lovibond: 1.8, mustMash: true, amountLb: 11 },
@@ -147,7 +146,6 @@ export function seedRecipes(): Recipe[] {
     author: 'BrewHaus',
     styleId: 'irish-stout',
     batchSizeGal: 5,
-    boilSizeGal: 6.5,
     efficiencyPct: 72,
     fermentables: [
       { fermentableId: 'pale-maris-otter', name: 'Maris Otter', type: 'grain', potential: 1.038, lovibond: 3.0, mustMash: true, amountLb: 7 },

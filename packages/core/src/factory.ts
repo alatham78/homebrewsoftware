@@ -1,22 +1,38 @@
-import { defaultEquipment } from './equipment.js';
+import { defaultEquipmentPreset, presetProfile, volumeBreakdown } from './equipment.js';
 import type { Recipe } from './types.js';
+
+/** Batch size new recipes start with, gallons into the fermenter. */
+export const DEFAULT_BATCH_SIZE_GAL = 5;
 
 function generateId(): string {
   const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
   return c?.randomUUID ? c.randomUUID() : `r-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
 }
 
-/** Create a sensible blank recipe (5 gal batch, 60 min boil, 72% efficiency). */
+/**
+ * Create a recipe on the default rig: DEFAULT_BATCH_SIZE_GAL batch, 60 min
+ * boil, 72% efficiency, the default equipment preset with its sparge method,
+ * and a pre-boil volume derived from that equipment.
+ */
 export function newRecipe(partial: Partial<Recipe> = {}): Recipe {
   const now = new Date().toISOString();
-  return {
+  const preset = defaultEquipmentPreset();
+  const equipment = presetProfile(preset);
+  const spargeType = preset.defaultSpargeType ?? 'batch';
+  const boilTimeMin = 60;
+  const preBoilGal = volumeBreakdown(DEFAULT_BATCH_SIZE_GAL, boilTimeMin, 0, equipment, {
+    ratioQtPerLb: 1.5,
+    spargeType,
+  }).preBoilGal;
+
+  const recipe: Recipe = {
     id: generateId(),
     name: 'New Recipe',
     author: '',
     styleId: 'american-pale-ale',
-    batchSizeGal: 5,
-    boilSizeGal: 6.5,
-    boilTimeMin: 60,
+    batchSizeGal: DEFAULT_BATCH_SIZE_GAL,
+    boilSizeGal: Math.round(preBoilGal * 100) / 100,
+    boilTimeMin,
     efficiencyPct: 72,
     fermentables: [],
     hops: [],
@@ -27,9 +43,9 @@ export function newRecipe(partial: Partial<Recipe> = {}): Recipe {
       mashTimeMin: 60,
       ratioQtPerLb: 1.5,
       steps: [{ name: 'Saccharification', type: 'infusion', tempF: 152, timeMin: 60 }],
-      spargeType: 'batch',
+      spargeType,
     },
-    equipment: defaultEquipment(),
+    equipment,
     carbonationVols: 2.4,
     water: {
       sourceName: 'Distilled / RO',
@@ -43,4 +59,10 @@ export function newRecipe(partial: Partial<Recipe> = {}): Recipe {
     updatedAt: now,
     ...partial,
   };
+
+  // A partial may carry an explicit undefined id (e.g. JSON imports asking for a fresh one).
+  if (!recipe.id) recipe.id = generateId();
+  // A partial mash without a sparge method inherits the default rig's.
+  if (!recipe.mash.spargeType) recipe.mash = { ...recipe.mash, spargeType };
+  return recipe;
 }

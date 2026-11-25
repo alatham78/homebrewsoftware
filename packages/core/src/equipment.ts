@@ -54,12 +54,14 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
     fermenterLossGal: 0.5,
   },
   // Blichmann Pro Pilot / Pilot HERMS systems: three BoilerMaker vessels,
-  // AutoSparge (fly sparge), Therminator plate chiller. Loss values are
-  // community-typical starting points — Blichmann doesn't publish them;
-  // dial them in from your first measured batch.
+  // AutoSparge (fly sparge), Therminator plate chiller. Blichmann names each
+  // system by BATCH size; the kettles are roughly twice that (the "5 gallon"
+  // system runs 10 gal pots). Loss values are community-typical starting
+  // points — Blichmann doesn't publish them; dial them in from your first
+  // measured batch.
   {
     id: 'blichmann-pilot-5',
-    name: 'Blichmann Pilot HERMS — 5 gal (10 gal kettles)',
+    name: 'Blichmann Pro Pilot HERMS — 5 gal batches (10 gal kettles)',
     boilOffGalPerHour: 1.0,
     kettleDeadspaceGal: 0.5,
     lauterDeadspaceGal: 0.25,
@@ -69,7 +71,7 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
   },
   {
     id: 'blichmann-pilot-10',
-    name: 'Blichmann Pro Pilot HERMS — 10 gal (20 gal boil kettle)',
+    name: 'Blichmann Pro Pilot HERMS — 10 gal batches (20 gal boil kettle)',
     boilOffGalPerHour: 1.25,
     kettleDeadspaceGal: 0.75,
     lauterDeadspaceGal: 0.5,
@@ -79,7 +81,7 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
   },
   {
     id: 'blichmann-pilot-15',
-    name: 'Blichmann Pro Pilot HERMS — 15 gal (30 gal boil kettle)',
+    name: 'Blichmann Pro Pilot HERMS — 15 gal batches (30 gal boil kettle)',
     boilOffGalPerHour: 1.5,
     kettleDeadspaceGal: 1.0,
     lauterDeadspaceGal: 0.5,
@@ -89,7 +91,7 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
   },
   {
     id: 'blichmann-pilot-20',
-    name: 'Blichmann Pro Pilot HERMS — 20 gal (30 gal kettles)',
+    name: 'Blichmann Pro Pilot HERMS — 20 gal batches (30 gal kettles)',
     boilOffGalPerHour: 1.75,
     kettleDeadspaceGal: 1.0,
     lauterDeadspaceGal: 0.75,
@@ -99,7 +101,7 @@ export const EQUIPMENT_PRESETS: EquipmentPreset[] = [
   },
   {
     id: 'blichmann-pilot-1bbl',
-    name: 'Blichmann Pro Pilot HERMS — 1 BBL (31 gal)',
+    name: 'Blichmann Pro Pilot HERMS — 1 BBL batches (31 gal)',
     boilOffGalPerHour: 2.5,
     kettleDeadspaceGal: 1.5,
     lauterDeadspaceGal: 1.0,
@@ -115,8 +117,15 @@ export function presetProfile(preset: EquipmentPreset): EquipmentProfile {
   return { ...profile };
 }
 
+/** The rig new recipes start with: the owner's 5-gal-batch Blichmann Pro Pilot (10 gal kettles). */
+export const DEFAULT_EQUIPMENT_PRESET_ID = 'blichmann-pilot-5';
+
+export function defaultEquipmentPreset(): EquipmentPreset {
+  return EQUIPMENT_PRESETS.find((p) => p.id === DEFAULT_EQUIPMENT_PRESET_ID) ?? EQUIPMENT_PRESETS[0]!;
+}
+
 export function defaultEquipment(): EquipmentProfile {
-  return presetProfile(EQUIPMENT_PRESETS[0]!);
+  return presetProfile(defaultEquipmentPreset());
 }
 
 export interface VolumeBreakdown {
