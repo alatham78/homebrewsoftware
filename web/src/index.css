@@ -25,6 +25,10 @@
 
   --danger: #e66767;
 
+  /* Glassware */
+  --glass-edge: rgba(232, 238, 245, 0.42);
+  --glass-fill: rgba(232, 238, 245, 0.07);
+
   --radius: 12px;
   --radius-sm: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -398,6 +402,8 @@ table.ingredients input.qty {
 .stats-panel {
   position: sticky;
   top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .stat-grid {
@@ -481,6 +487,99 @@ table.ingredients input.qty {
   color: var(--meter-in);
 }
 
+/* ---------- Beer mug hero ---------- */
+
+.mug-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: -6px -6px 18px;
+  padding: 10px 8px 12px;
+  border-radius: var(--radius-sm);
+  border-bottom: 1px solid var(--hairline);
+  background: radial-gradient(circle at 32% 58%, var(--beer-glow, transparent) 0%, transparent 62%);
+}
+
+.beer-mug {
+  width: 150px;
+  flex-shrink: 0;
+  height: auto;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+
+.mug-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mug-info .label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.mug-srm {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.mug-srm small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
+.mug-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.mug-meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.beer-bubble {
+  fill: #fff;
+  opacity: 0;
+  animation-name: bubble-rise;
+  animation-timing-function: ease-in;
+  animation-iteration-count: infinite;
+}
+
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-92px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beer-bubble {
+    animation: none;
+    opacity: 0.35;
+  }
+}
+
 /* ---------- Designer layout ---------- */
 
 .designer {
@@ -496,6 +595,8 @@ table.ingredients input.qty {
   }
   .stats-panel {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 

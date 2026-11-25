@@ -105,24 +105,66 @@ export function srm(fermentables: FermentableAddition[], batchSizeGal: number): 
   return 1.4922 * Math.pow(mcu, 0.6859);
 }
 
-/** Approximate CSS color for an SRM value. */
+/** Reference beer colors by SRM, used as interpolation stops. */
+const SRM_COLOR_STOPS: Array<[number, string]> = [
+  [1, '#FFE699'], [2, '#FFD878'], [3, '#FFCA5A'], [4, '#FFBF42'], [5, '#FBB123'],
+  [6, '#F8A600'], [7, '#F39C00'], [8, '#EA8F00'], [9, '#E58500'], [10, '#DE7C00'],
+  [11, '#D77200'], [12, '#CF6900'], [13, '#CB6200'], [14, '#C35900'], [15, '#BB5100'],
+  [16, '#B54C00'], [17, '#B04500'], [18, '#A63E00'], [19, '#A13700'], [20, '#9B3200'],
+  [21, '#952D00'], [22, '#8E2900'], [23, '#882300'], [24, '#821E00'], [25, '#7B1A00'],
+  [26, '#771900'], [27, '#701400'], [28, '#6A0E00'], [29, '#660D00'], [30, '#5E0B00'],
+  [35, '#4C0505'], [40, '#38030B'], [50, '#1A0505'],
+];
+
+const hexToRgb = (hex: string): [number, number, number] => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16),
+];
+
+const rgbToHex = (rgb: number[]): string =>
+  `#${rgb.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+/**
+ * CSS color for an SRM value, interpolated between reference colors so
+ * fractional SRM values (and animations across the scale) change smoothly.
+ */
 export function srmToHex(srmValue: number): string {
-  const table: Array<[number, string]> = [
-    [1, '#FFE699'], [2, '#FFD878'], [3, '#FFCA5A'], [4, '#FFBF42'], [5, '#FBB123'],
-    [6, '#F8A600'], [7, '#F39C00'], [8, '#EA8F00'], [9, '#E58500'], [10, '#DE7C00'],
-    [11, '#D77200'], [12, '#CF6900'], [13, '#CB6200'], [14, '#C35900'], [15, '#BB5100'],
-    [16, '#B54C00'], [17, '#B04500'], [18, '#A63E00'], [19, '#A13700'], [20, '#9B3200'],
-    [21, '#952D00'], [22, '#8E2900'], [23, '#882300'], [24, '#821E00'], [25, '#7B1A00'],
-    [26, '#771900'], [27, '#701400'], [28, '#6A0E00'], [29, '#660D00'], [30, '#5E0B00'],
-    [35, '#4C0505'], [40, '#38030b'],
-  ];
-  const clamped = Math.max(0, srmValue);
-  let hex = table[0]![1];
-  for (const [s, h] of table) {
-    if (clamped >= s) hex = h;
+  const stops = SRM_COLOR_STOPS;
+  const value = Number.isFinite(srmValue) ? srmValue : 0;
+  if (value <= stops[0]![0]) return stops[0]![1];
+  for (let i = 1; i < stops.length; i++) {
+    const [s1, h1] = stops[i]!;
+    if (value <= s1) {
+      const [s0, h0] = stops[i - 1]!;
+      const t = (value - s0) / (s1 - s0);
+      const a = hexToRgb(h0);
+      const b = hexToRgb(h1);
+      return rgbToHex(a.map((c, k) => c + (b[k]! - c) * t));
+    }
   }
-  return clamped > 40 ? '#1A0A0A' : hex;
+  return stops[stops.length - 1]![1];
 }
+
+/** Common-language name for a beer color. */
+export function srmColorName(srmValue: number): string {
+  if (srmValue < 2) return 'Pale straw';
+  if (srmValue < 3) return 'Straw';
+  if (srmValue < 4.5) return 'Pale gold';
+  if (srmValue < 6) return 'Deep gold';
+  if (srmValue < 9) return 'Pale amber';
+  if (srmValue < 12) return 'Medium amber';
+  if (srmValue < 15) return 'Deep amber';
+  if (srmValue < 18) return 'Amber brown';
+  if (srmValue < 21) return 'Brown';
+  if (srmValue < 25) return 'Ruby brown';
+  if (srmValue < 30) return 'Deep brown';
+  if (srmValue < 40) return 'Black';
+  return 'Opaque black';
+}
+
+/** Convert SRM to EBC (the European color scale). */
+export const srmToEbc = (srmValue: number): number => srmValue * 1.97;
 
 /** Calories per 12 oz serving from OG and FG. */
 export function calories12oz(og: number, fg: number): number {

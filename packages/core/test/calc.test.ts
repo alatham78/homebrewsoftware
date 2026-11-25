@@ -14,6 +14,8 @@ import {
   recipeStats,
   sgToPlato,
   srm,
+  srmColorName,
+  srmToEbc,
   srmToHex,
   strikeWaterTempF,
   toBeerXml,
@@ -139,6 +141,40 @@ describe('color (Morey)', () => {
   it('maps SRM to a hex color', () => {
     expect(srmToHex(4)).toMatch(/^#[0-9A-Fa-f]{6}$/);
     expect(srmToHex(4)).not.toBe(srmToHex(30));
+  });
+
+  it('interpolates smoothly between reference colors', () => {
+    expect(srmToHex(4)).toBe('#FFBF42'); // exact stops are preserved
+    expect(srmToHex(5)).toBe('#FBB123');
+    const mid = srmToHex(4.5);
+    expect(mid).not.toBe(srmToHex(4));
+    expect(mid).not.toBe(srmToHex(5));
+    // halfway between #FFBF42 and #FBB123
+    expect(mid).toBe('#FDB833');
+  });
+
+  it('darkens monotonically across the whole scale', () => {
+    const luminance = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    let prev = Infinity;
+    for (let s = 1; s <= 50; s += 0.25) {
+      const l = luminance(srmToHex(s));
+      // Rounding to 8-bit channels can tick green up one step (~0.72 luminance).
+      expect(l, `SRM ${s}`).toBeLessThanOrEqual(prev + 1);
+      prev = l;
+    }
+    expect(srmToHex(0)).toBe(srmToHex(1));
+    expect(srmToHex(80)).toBe('#1A0505');
+    expect(srmToHex(Number.NaN)).toBe(srmToHex(1));
+  });
+
+  it('names beer colors and converts to EBC', () => {
+    expect(srmColorName(3.5)).toBe('Pale gold');
+    expect(srmColorName(13)).toBe('Deep amber');
+    expect(srmColorName(35)).toBe('Black');
+    expect(srmToEbc(10)).toBeCloseTo(19.7, 5);
   });
 });
 
